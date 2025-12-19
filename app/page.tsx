@@ -29,9 +29,9 @@ export default function Page() {
         if (!s.ok) throw new Error("stats failed");
         setStats(await s.json());
 
-        const r = await fetch("/api/rewards", { cache: "no-store" })
-          { cache: "no-store" }
-        );
+        const r = await fetch("/api/rewards", { 
+          cache: "no-store", 
+        });
         if (r.ok) setHistory(await r.json());
       } catch {
         setError("Failed to load data");
