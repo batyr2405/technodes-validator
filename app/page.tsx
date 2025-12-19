@@ -148,124 +148,86 @@ function format(n?: number) {
 
 /* ---------------- STYLES ---------------- */
 
-const styles: Record<string, any> = {
+const styles: Record<string, React.CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background: "#000",
-    color: "#fff",
+    background: "radial-gradient(circle at top, #111 0%, #000 60%)",
+    padding: "48px 20px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    gap: 32,
-    padding: 40,
+    gap: 24,
+    color: "#fff",
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+
+  intro: {
+    maxWidth: 720,
+    marginBottom: 12,
+    color: "#ccc",
+    lineHeight: 1.6,
+    textAlign: "center",
+  },
+
+  introTitle: {
+    fontSize: 22,
+    fontWeight: 700,
+    marginBottom: 12,
+    color: "#fff",
+  },
+
+  introText: {
+    fontSize: 15,
+    marginBottom: 8,
+    opacity: 0.9,
   },
 
   card: {
     width: "100%",
     maxWidth: 720,
-    background: "linear-gradient(145deg, #111, #0b0b0b)",
-    borderRadius: 24,
-    padding: 28,
-    boxShadow: "0 0 40px rgba(0,0,0,0.6)",
+    background: "linear-gradient(180deg, #1a1a1a, #111)",
+    borderRadius: 20,
+    padding: 24,
+    boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+    border: "1px solid rgba(255,255,255,0.06)",
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    marginBottom: 12,
   },
 
   title: {
     fontSize: 28,
-    fontWeight: 700,
+    fontWeight: 800,
   },
 
-  active: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
+  status: {
     padding: "6px 14px",
     borderRadius: 999,
-    background: "rgba(34,197,94,0.15)",
-    color: "#22c55e",
-    fontWeight: 600,
-    fontSize: 14,
-  },
-
-  pulseDot: {
-    width: 10,
-    height: 10,
-    borderRadius: "50%",
-    background: "#22c55e",
-    boxShadow: "0 0 8px rgba(34,197,94,0.9)",
-    animation: "pulse 1.6s infinite",
-  },
-
-  network: {
-    opacity: 0.6,
-    marginBottom: 24,
+    fontSize: 12,
+    fontWeight: 700,
+    backgroundColor: "#16a34a",
+    color: "#fff",
+    position: "relative",
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: 32,
+    gap: 16,
+    marginTop: 16,
   },
 
   label: {
-    opacity: 0.6,
-    fontSize: 14,
+    fontSize: 13,
+    opacity: 0.7,
   },
 
   value: {
     fontSize: 18,
     fontWeight: 600,
   },
-
-  reward: {
-    fontSize: 36,
-    fontWeight: 700,
-    color: "#86efac",
-    marginTop: 12,
-  },
-
-  apr: {
-    marginTop: 8,
-    fontSize: 16,
-  },
-
-  updated: {
-    marginTop: 20,
-    opacity: 0.5,
-    fontSize: 13,
-  },
-
-  loading: {
-    color: "#aaa",
-    padding: 60,
-  },
-
-  error: {
-    color: "#f87171",
-    padding: 60,
-  },
 };
-intro: {
-  maxWidth: 720,
-  marginBottom: 16,
-  color: "#ccc",
-  lineHeight: 1.6,
-},
-
-introTitle: {
-  fontSize: 22,
-  fontWeight: 700,
-  marginBottom: 12,
-  color: "#fff",
-},
-
-introText: {
-  fontSize: 15,
-  marginBottom: 8,
-  opacity: 0.9,
-},
