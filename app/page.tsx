@@ -1,4 +1,7 @@
+// app/page.tsx
 import RewardsCard from "./components/RewardsCard";
+
+export const dynamic = "force-dynamic";
 
 type Stats = {
   validator: string;
@@ -9,75 +12,67 @@ type Stats = {
   updated: string;
 };
 
-export const dynamic = "force-dynamic";
-
-async function getStats(): Promise<Stats> {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/api/stats`, {
-    cache: "no-store",
-  });
+export default async function Page() {
+  const res = await fetch(
+    "https://technodes-validator.vercel.app/api/stats",
+    { cache: "no-store" }
+  );
 
   if (!res.ok) {
     throw new Error("Failed to load stats");
   }
 
-  return res.json();
-}
+  const data: Stats = await res.json();
 
-export default async function Page() {
-  const data = await getStats();
-
-  const isActive = data.status.toLowerCase() === "active";
+  const isActive = data.status?.toLowerCase() === "active";
 
   return (
-    <main className="min-h-screen bg-black text-white flex justify-center p-6">
-      <div className="w-full max-w-xl space-y-6">
-        {/* ================= MAIN CARD ================= */}
-        <div className="rounded-xl bg-zinc-900 border border-zinc-800 p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{data.validator}</h1>
+    <main className="min-h-screen bg-neutral-950 text-white p-6">
+      <div className="max-w-xl mx-auto space-y-6">
 
-            <div className="relative flex items-center justify-center">
-              <span
-                className={`absolute inline-flex h-3 w-3 rounded-full ${
-                  isActive ? "bg-green-500 animate-ping" : "bg-red-500"
-                }`}
-              />
-              <span
-                className={`relative inline-flex h-3 w-3 rounded-full ${
-                  isActive ? "bg-green-500" : "bg-red-500"
-                }`}
-              />
+        {/* Validator card */}
+        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5 space-y-3">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-bold">{data.validator}</h1>
+
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold
+                ${isActive ? "bg-green-600 animate-pulse" : "bg-red-600"}
+              `}
+            >
+              {data.status?.toUpperCase()}
+            </span>
+          </div>
+
+          <div className="text-sm text-neutral-400">
+            {data.network}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 pt-3 text-sm">
+            <div>
+              <div className="text-neutral-400">Total Stake</div>
+              <div className="font-mono">
+                {data.stake_total.toLocaleString()} ASHM
+              </div>
+            </div>
+
+            <div>
+              <div className="text-neutral-400">Commission</div>
+              <div className="font-mono">
+                {(data.commission * 100).toFixed(0)} %
+              </div>
             </div>
           </div>
 
-          <p className="text-zinc-400">{data.network}</p>
-
-          <div className="grid grid-cols-2 gap-4 pt-2">
-            <Stat label="Status" value={data.status.toUpperCase()} />
-            <Stat label="Commission" value={`${(data.commission * 100).toFixed(0)} %`} />
-            <Stat
-              label="Total Stake"
-              value={`${new Intl.NumberFormat("en-US").format(data.stake_total)} ASHM`}
-            />
-            <Stat
-              label="Updated"
-              value={new Date(data.updated).toLocaleString()}
-            />
+          <div className="text-xs text-neutral-500 pt-2">
+            Updated: {new Date(data.updated).toLocaleString()}
           </div>
         </div>
 
-        {/* ================= REWARDS BLOCK ================= */}
+        {/* Rewards block (Client Component) */}
         <RewardsCard />
+
       </div>
     </main>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <div className="text-xs text-zinc-400">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
-    </div>
   );
 }
