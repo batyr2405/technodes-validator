@@ -1,12 +1,34 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
+const STATS_URL = "http://62.84.177.12/stats.json"; // твой сервер
 
 export async function GET() {
-  return NextResponse.json({
-    ok: true,
-    rewards_24h: 0.067914,
-    apr: 5.62,
-    updated: new Date().toISOString(),
-  });
+  try {
+    const res = await fetch(STATS_URL, { cache: "no-store" });
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch stats");
+    }
+
+    const data = await res.json();
+
+    const rewards24h = Number(data.rewards_24h);
+    const stakeTotal = Number(data.stake_total);
+
+    const apr =
+      stakeTotal > 0
+        ? (rewards24h * 365 * 100) / stakeTotal
+        : 0;
+
+    return NextResponse.json({
+      rewards_24h: rewards24h,
+      apr: Number(apr.toFixed(2)),
+      updated: data.updated,
+    });
+  } catch (e) {
+    return NextResponse.json(
+      { error: "Failed to load rewards" },
+      { status: 500 }
+    );
+  }
 }
