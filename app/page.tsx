@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 
 type Rewards = {
-  rewards_24h: number;
-  apr: number;
-  updated: string;
+  rewards_24h?: number;
+  apr?: number;
+  updated?: string;
 };
 
 export default function Page() {
@@ -19,14 +19,6 @@ export default function Page() {
         if (!res.ok) throw new Error("API error");
 
         const json = await res.json();
-
-        if (
-          typeof json !== "object" ||
-          typeof json.rewards_24h !== "number"
-        ) {
-          throw new Error("Invalid API response");
-        }
-
         setData(json);
       } catch (e) {
         console.error(e);
@@ -36,6 +28,16 @@ export default function Page() {
 
     load();
   }, []);
+
+  const rewards =
+    typeof data?.rewards_24h === "number"
+      ? data.rewards_24h.toFixed(4)
+      : "—";
+
+  const apr =
+    typeof data?.apr === "number"
+      ? data.apr.toFixed(2) + " %"
+      : "—";
 
   return (
     <main style={styles.page}>
@@ -52,14 +54,13 @@ export default function Page() {
         {error && <p style={styles.error}>{error}</p>}
         {!error && !data && <p style={styles.loading}>Loading…</p>}
 
-        {data && (
-          <>
-            <Stat label="Rewards (24h)" value={`+${data.rewards_24h.toFixed(4)} ASHM`} />
-            <Stat label="APR (est.)" value={`${data.apr.toFixed(2)} %`} />
-            <p style={styles.updated}>
-              Updated: {new Date(data.updated).toLocaleString()}
-            </p>
-          </>
+        <Stat label="Rewards (24h)" value={rewards + " ASHM"} />
+        <Stat label="APR (est.)" value={apr} />
+
+        {data?.updated && (
+          <p style={styles.updated}>
+            Updated: {new Date(data.updated).toLocaleString()}
+          </p>
         )}
       </div>
     </main>
@@ -83,19 +84,16 @@ const styles: Record<string, any> = {
     alignItems: "center",
     justifyContent: "center",
     color: "#fff",
-    fontFamily: "Inter, system-ui",
   },
   card: {
     width: 380,
     background: "#121826",
     padding: 24,
     borderRadius: 14,
-    boxShadow: "0 20px 40px rgba(0,0,0,.4)",
   },
   header: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
     marginBottom: 16,
   },
   title: { fontSize: 18, fontWeight: 600 },
@@ -104,8 +102,6 @@ const styles: Record<string, any> = {
     alignItems: "center",
     gap: 8,
     color: "#22c55e",
-    fontSize: 13,
-    fontWeight: 600,
   },
   dot: {
     width: 10,
@@ -123,13 +119,13 @@ const styles: Record<string, any> = {
     borderRadius: 10,
     marginTop: 10,
   },
-  label: { color: "#9ca3af", fontSize: 13 },
-  value: { fontFamily: "monospace", fontSize: 13 },
+  label: { color: "#9ca3af" },
+  value: { fontFamily: "monospace" },
   updated: {
     marginTop: 12,
     fontSize: 11,
     color: "#6b7280",
   },
-  error: { color: "#f87171", fontSize: 13 },
-  loading: { color: "#9ca3af", fontSize: 13 },
+  error: { color: "#f87171" },
+  loading: { color: "#9ca3af" },
 };
