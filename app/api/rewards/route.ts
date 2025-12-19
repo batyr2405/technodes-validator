@@ -1,33 +1,33 @@
 import { NextResponse } from "next/server";
 
-const STATS_URL = "http://62.84.177.12/stats.json"; // твой сервер
+export const dynamic = "force-dynamic";
+
+const API_URL = "http://62.84.177.12:8090/rewards/history";
 
 export async function GET() {
   try {
-    const res = await fetch(STATS_URL, { cache: "no-store" });
+    const res = await fetch(API_URL, {
+      cache: "no-store",
+    });
 
     if (!res.ok) {
-      throw new Error("Failed to fetch stats");
+      throw new Error("Rewards API error");
     }
 
-    const data = await res.json();
+    const history: { date: string; rewards: number }[] = await res.json();
 
-    const rewards24h = Number(data.rewards_24h);
-    const stakeTotal = Number(data.stake_total);
-
-    const apr =
-      stakeTotal > 0
-        ? (rewards24h * 365 * 100) / stakeTotal
-        : 0;
+    const rewards24h =
+      history.length > 0 ? history[history.length - 1].rewards : 0;
 
     return NextResponse.json({
+      ok: true,
       rewards_24h: rewards24h,
-      apr: Number(apr.toFixed(2)),
-      updated: data.updated,
+      history,
+      updated: new Date().toISOString(),
     });
   } catch (e) {
     return NextResponse.json(
-      { error: "Failed to load rewards" },
+      { ok: false, error: "Failed to load rewards" },
       { status: 500 }
     );
   }
