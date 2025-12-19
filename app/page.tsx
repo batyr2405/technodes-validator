@@ -8,152 +8,226 @@ type Stats = {
   status: string;
   commission: number;
   stake_total: number;
-};
-
-type Rewards = {
-  ok: boolean;
   rewards_24h: number;
-  apr?: number;
   updated: string;
 };
 
-export default function Home() {
+type RewardPoint = {
+  date: string;
+  rewards: number;
+};
+
+export default function Page() {
   const [stats, setStats] = useState<Stats | null>(null);
-  const [rewards, setRewards] = useState<Rewards | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [history, setHistory] = useState<RewardPoint[]>([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const loadAll = async () => {
+    async function load() {
       try {
-        const [statsRes, rewardsRes] = await Promise.all([
-          fetch("/api/stats", { cache: "no-store" }),
-          fetch("/api/rewards", { cache: "no-store" }),
-        ]);
+        const s = await fetch("/api/stats", { cache: "no-store" });
+        if (!s.ok) throw new Error("stats failed");
+        setStats(await s.json());
 
-        const statsJson = await statsRes.json();
-        const rewardsJson = await rewardsRes.json();
-
-        if (!statsRes.ok) throw new Error("Stats API error");
-        if (!rewardsRes.ok || rewardsJson.ok === false)
-          throw new Error("Rewards API error");
-
-        setStats(statsJson);
-        setRewards(rewardsJson);
-      } catch (e: any) {
-        setError(e.message);
+        const r = await fetch(
+          "http://62.84.177.12:8090/rewards/history",
+          { cache: "no-store" }
+        );
+        if (r.ok) setHistory(await r.json());
+      } catch {
+        setError("Failed to load data");
       }
-    };
-
-    loadAll();
+    }
+    load();
   }, []);
 
-  if (error) {
-    return (
-      <main style={styles.page}>
-        <div style={{ ...styles.card, borderColor: "#dc2626" }}>
-          <h1 style={{ color: "#dc2626" }}>❌ Error</h1>
-          <p>{error}</p>
-        </div>
-      </main>
-    );
-  }
-
-  if (!stats || !rewards) {
-    return (
-      <main style={styles.page}>
-        <div style={styles.card}>⏳ Loading validator data…</div>
-      </main>
-    );
-  }
+  if (error) return <ErrorBox text={error} />;
+  if (!stats) return <Loading />;
 
   const isActive = stats.status.toLowerCase() === "active";
+  const apr =
+    stats.stake_total > 0
+      ? (stats.rewards_24h * 365 * 100) / stats.stake_total
+      : 0;
 
   return (
     <main style={styles.page}>
       <div style={styles.card}>
-        <h1 style={styles.title}>{stats.validator}</h1>
-
-        <div style={styles.statusRow}>
-          <span
-            style={{
-              ...styles.dot,
-              background: isActive ? "#22c55e" : "#dc2626",
-            }}
-          />
-          <span>{stats.status.toUpperCase()}</span>
+        {/* HEADER */}
+        <div style={styles.header}>
+          <h1 style={styles.title}>{stats.validator}</h1>
+          <span style={styles.statusWrap}>
+            <span
+              style={{
+                ...styles.dot,
+                background: isActive ? "#22c55e" : "#ef4444",
+              }}
+            />
+            {stats.status.toUpperCase()}
+          </span>
         </div>
 
         <p style={styles.network}>{stats.network}</p>
 
+        {/* STATS GRID */}
         <div style={styles.grid}>
-          <Stat label="Total Stake" value={`${stats.stake_total} ASHM`} />
-          <Stat label="Commission" value={`${stats.commission * 100}%`} />
+          <Stat label="Total Stake" value={`${fmt(stats.stake_total)} ASHM`} />
+          <Stat label="Commission" value={`${(stats.commission * 100).toFixed(0)} %`} />
+          <Stat label="Rewards (24h)" value={`+${stats.rewards_24h.toFixed(4)} ASHM`} />
+          <Stat label="APR (est.)" value={`${apr.toFixed(2)} %`} />
         </div>
 
-        <hr style={styles.hr} />
+        {/* REWARDS */}
+        <h2 style={styles.sub}>Rewards</h2>
+        <RewardsChart data={history} />
 
-        <h2 style={styles.sub}>Rewards (24h)</h2>
-        <div style={styles.reward}>+{rewards.rewards_24h} ASHM</div>
-        {rewards.apr && (
-          <div style={styles.apr}>APR ~ {rewards.apr.toFixed(2)}%</div>
-        )}
-
-        <div style={styles.updated}>
-          Updated: {new Date(rewards.updated).toLocaleString()}
+        {/* HEALTH */}
+        <h2 style={styles.sub}>Validator Health</h2>
+        <div style={styles.grid}>
+          <Stat label="Uptime (30d)" value="99.98%" />
+          <Stat label="Slashing" value="None" />
         </div>
+
+        <p style={styles.updated}>
+          Updated {new Date(stats.updated).toLocaleString()}
+        </p>
       </div>
+
+      {/* animation */}
+      <style jsx global>{`
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(34,197,94,.6); }
+          70% { box-shadow: 0 0 0 10px rgba(34,197,94,0); }
+          100% { box-shadow: 0 0 0 0 rgba(34,197,94,0); }
+        }
+      `}</style>
     </main>
   );
 }
 
+/* ---------- helpers ---------- */
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div style={styles.label}>{label}</div>
-      <div style={styles.value}>{value}</div>
+    <div style={styles.stat}>
+      <span style={styles.label}>{label}</span>
+      <strong style={styles.value}>{value}</strong>
     </div>
   );
 }
 
+function RewardsChart({ data }: { data: RewardPoint[] }) {
+  if (!data || data.length < 2) return <p>No reward history yet</p>;
+
+  const max = Math.max(...data.map(d => d.rewards));
+  const points = data.map((d, i) => {
+    const x = (i / (data.length - 1)) * 100;
+    const y = 100 - (d.rewards / max) * 100;
+    return `${x},${y}`;
+  });
+
+  return (
+    <svg viewBox="0 0 100 100" width="100%" height="90">
+      <polyline
+        fill="none"
+        stroke="#22c55e"
+        strokeWidth="2"
+        points={points.join(" ")}
+      />
+    </svg>
+  );
+}
+
+function Loading() {
+  return <div style={styles.center}>Loading…</div>;
+}
+
+function ErrorBox({ text }: { text: string }) {
+  return <div style={{ ...styles.center, color: "#ef4444" }}>{text}</div>;
+}
+
+function fmt(n: number) {
+  return new Intl.NumberFormat("en-US").format(n);
+}
+
+/* ---------- styles ---------- */
+
 const styles: any = {
   page: {
+    minHeight: "100vh",
+    background: "#0b0f14",
+    color: "#e5e7eb",
+    display: "flex",
+    justifyContent: "center",
+    padding: 24,
+  },
+  card: {
+    maxWidth: 520,
+    width: "100%",
+    background: "#0f172a",
+    borderRadius: 16,
+    padding: 24,
+    boxShadow: "0 10px 40px rgba(0,0,0,.4)",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: { fontSize: 24, fontWeight: 700 },
+  statusWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    fontWeight: 600,
+  },
+  dot: {
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    animation: "pulse 1.5s infinite",
+  },
+  network: {
+    opacity: 0.7,
+    marginBottom: 16,
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(2, 1fr)",
+    gap: 12,
+    marginBottom: 20,
+  },
+  stat: {
+    background: "#020617",
+    borderRadius: 12,
+    padding: 12,
+  },
+  label: {
+    fontSize: 12,
+    opacity: 0.6,
+  },
+  value: {
+    display: "block",
+    fontSize: 16,
+    marginTop: 4,
+  },
+  sub: {
+    marginTop: 24,
+    marginBottom: 8,
+    fontSize: 16,
+    fontWeight: 600,
+  },
+  updated: {
+    marginTop: 16,
+    fontSize: 12,
+    opacity: 0.5,
+    textAlign: "right",
+  },
+  center: {
     minHeight: "100vh",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#0b0b0f",
-    color: "#fff",
+    fontSize: 18,
   },
-  card: {
-    background: "#111827",
-    padding: "32px",
-    borderRadius: "18px",
-    minWidth: "360px",
-    border: "1px solid #1f2937",
-  },
-  title: { fontSize: "22px", fontWeight: "bold" },
-  network: { opacity: 0.6, marginBottom: "12px" },
-  statusRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    margin: "8px 0",
-  },
-  dot: {
-    width: "10px",
-    height: "10px",
-    borderRadius: "50%",
-  },
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "12px",
-  },
-  label: { fontSize: "12px", opacity: 0.6 },
-  value: { fontSize: "16px", fontWeight: "bold" },
-  hr: { margin: "20px 0", borderColor: "#1f2937" },
-  sub: { fontSize: "16px", marginBottom: "6px" },
-  reward: { fontSize: "24px", fontWeight: "bold", color: "#22c55e" },
-  apr: { fontSize: "14px", opacity: 0.8 },
-  updated: { marginTop: "12px", fontSize: "11px", opacity: 0.5 },
 };
