@@ -47,11 +47,17 @@ export default async function Home() {
           <h1 style={{ fontSize: 24 }}>{data.validator}</h1>
           <span
             style={{
-              padding: "4px 10px",
-              borderRadius: 999,
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               color: "#fff",
               background: isActive ? "#16a34a" : "#dc2626",
               fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: 0.5,  
             }}
           >
             {data.status.toUpperCase()}
