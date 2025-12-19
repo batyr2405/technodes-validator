@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
@@ -20,7 +19,7 @@ export async function GET() {
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
-      { error: "Stats server unreachable" },
+      { error: "Stats backend unreachable" },
       { status: 500 }
     );
   }
