@@ -3,18 +3,18 @@
 import { useEffect, useState } from "react";
 
 type Stats = {
-  validator: string;
-  network: string;
-  status: string;
-  stake_total: number;
-  commission: number;
-  updated: string;
+  validator?: string;
+  network?: string;
+  status?: string;
+  stake_total?: number;
+  commission?: number;
+  updated?: string;
 };
 
 type Rewards = {
-  rewards_24h: number;
-  apr: number;
-  updated: string;
+  rewards_24h?: number;
+  apr?: number;
+  updated?: string;
 };
 
 export default function Page() {
@@ -27,11 +27,13 @@ export default function Page() {
       try {
         const s = await fetch("/api/stats", { cache: "no-store" });
         if (!s.ok) throw new Error("stats failed");
-        setStats(await s.json());
+        const statsData = await s.json();
+        setStats(statsData ?? {});
 
         const r = await fetch("/api/rewards", { cache: "no-store" });
         if (!r.ok) throw new Error("rewards failed");
-        setRewards(await r.json());
+        const rewardsData = await r.json();
+        setRewards(rewardsData ?? {});
       } catch {
         setError("Failed to load data");
       }
@@ -39,6 +41,12 @@ export default function Page() {
 
     load();
   }, []);
+
+  /* ---------- SAFE VALUES ---------- */
+  const stake = Number(stats?.stake_total ?? 0);
+  const commission = Number(stats?.commission ?? 0);
+  const rewards24h = Number(rewards?.rewards_24h ?? 0);
+  const apr = Number(rewards?.apr ?? 0);
 
   return (
     <main style={styles.page}>
@@ -49,12 +57,11 @@ export default function Page() {
           <b>TechNodes-01</b> validator.
         </p>
         <p>
-          Unlike aggregator sites, this page shows{" "}
-          <b>only real data from my own node</b> — no estimates, no averages.
+          This page shows <b>only real data from my own node</b> —
+          no averages, no assumptions.
         </p>
         <p>
-          Here you can see how much this validator actually earns
-          and how it performs in the Shardeum network.
+          Track real rewards, uptime and performance in the Shardeum network.
         </p>
       </section>
 
@@ -64,8 +71,8 @@ export default function Page() {
         <section style={styles.card}>
           <div style={styles.header}>
             <div>
-              <h2 style={styles.title}>{stats.validator}</h2>
-              <p style={styles.network}>{stats.network}</p>
+              <h2 style={styles.title}>{stats.validator ?? "TechNodes-01"}</h2>
+              <p style={styles.network}>{stats.network ?? "Shardeum"}</p>
             </div>
 
             <div style={styles.status}>
@@ -78,20 +85,23 @@ export default function Page() {
             <div>
               <div style={styles.label}>Total Stake</div>
               <div style={styles.value}>
-                {stats.stake_total.toLocaleString()} ASHM
+                {stake.toLocaleString()} ASHM
               </div>
             </div>
 
             <div>
               <div style={styles.label}>Commission</div>
               <div style={styles.value}>
-                {(stats.commission * 100).toFixed(0)} %
+                {(commission * 100).toFixed(0)} %
               </div>
             </div>
           </div>
 
           <div style={styles.updated}>
-            Updated: {new Date(stats.updated).toLocaleString()}
+            Updated:{" "}
+            {stats.updated
+              ? new Date(stats.updated).toLocaleString()
+              : "—"}
           </div>
         </section>
       )}
@@ -100,13 +110,16 @@ export default function Page() {
         <section style={styles.card}>
           <div style={styles.label}>Rewards (24h)</div>
           <div style={styles.rewards}>
-            +{rewards.rewards_24h.toFixed(4)} ASHM
+            +{rewards24h.toFixed(4)} ASHM
           </div>
           <div style={styles.apr}>
-            APR (est.): {rewards.apr.toFixed(2)} %
+            APR (est.): {apr.toFixed(2)} %
           </div>
           <div style={styles.updated}>
-            Updated: {new Date(rewards.updated).toLocaleString()}
+            Updated:{" "}
+            {rewards.updated
+              ? new Date(rewards.updated).toLocaleString()
+              : "—"}
           </div>
         </section>
       )}
