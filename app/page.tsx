@@ -57,6 +57,27 @@ export default function Page() {
 
   return (
     <main style={styles.page}>
+<div style={styles.intro}>
+  <p style={styles.introTitle}>Welcome 👋</p>
+
+  <p style={styles.introText}>
+    You are viewing the public dashboard of <b>TechNodes-01</b> validator.
+  </p>
+
+  <p style={styles.introText}>
+    Unlike aggregator sites, this page shows <b>only real data from my own node</b> —
+    no averages, no estimates, no hidden assumptions.
+  </p>
+
+  <p style={styles.introText}>
+    Here you can see how much this validator actually earns and how it performs
+    in the Shardeum network.
+  </p>
+</div>
+
+
+
+
       {/* -------- VALIDATOR CARD -------- */}
       <div style={styles.card}>
         <div style={styles.header}>
@@ -229,3 +250,22 @@ const styles: Record<string, any> = {
     padding: 60,
   },
 };
+intro: {
+  maxWidth: 720,
+  marginBottom: 16,
+  color: "#ccc",
+  lineHeight: 1.6,
+},
+
+introTitle: {
+  fontSize: 22,
+  fontWeight: 700,
+  marginBottom: 12,
+  color: "#fff",
+},
+
+introText: {
+  fontSize: 15,
+  marginBottom: 8,
+  opacity: 0.9,
+},
