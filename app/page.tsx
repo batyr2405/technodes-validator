@@ -18,7 +18,7 @@ export default function Home() {
 
   const loadStats = async () => {
     try {
-      const res = await fetch("http://62.84.177.12/stats.json", {
+      const res = await fetch("/api/stats", {
         cache: "no-store",
       });
 
