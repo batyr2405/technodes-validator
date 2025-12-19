@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-/* ---------------- TYPES ---------------- */
-
 type Stats = {
   validator: string;
   network: string;
@@ -19,8 +17,6 @@ type Rewards = {
   updated: string;
 };
 
-/* ---------------- PAGE ---------------- */
-
 export default function Page() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [rewards, setRewards] = useState<Rewards | null>(null);
@@ -30,12 +26,11 @@ export default function Page() {
     const load = async () => {
       try {
         const s = await fetch("/api/stats", { cache: "no-store" });
-        if (!s.ok) throw new Error("stats");
+        if (!s.ok) throw new Error("stats failed");
+        setStats(await s.json());
 
         const r = await fetch("/api/rewards", { cache: "no-store" });
-        if (!r.ok) throw new Error("rewards");
-
-        setStats(await s.json());
+        if (!r.ok) throw new Error("rewards failed");
         setRewards(await r.json());
       } catch {
         setError("Failed to load data");
@@ -45,189 +40,186 @@ export default function Page() {
     load();
   }, []);
 
-  if (error) {
-    return <div style={styles.error}>{error}</div>;
-  }
-
-  if (!stats || !rewards) {
-    return <div style={styles.loading}>Loading…</div>;
-  }
-
-  const isActive = stats.status?.toLowerCase() === "active";
-
   return (
     <main style={styles.page}>
-<div style={styles.intro}>
-  <p style={styles.introTitle}>Welcome 👋</p>
+      <section style={styles.intro}>
+        <h1 style={styles.welcome}>Welcome 👋</h1>
+        <p>
+          You are viewing the public dashboard of{" "}
+          <b>TechNodes-01</b> validator.
+        </p>
+        <p>
+          Unlike aggregator sites, this page shows{" "}
+          <b>only real data from my own node</b> — no estimates, no averages.
+        </p>
+        <p>
+          Here you can see how much this validator actually earns
+          and how it performs in the Shardeum network.
+        </p>
+      </section>
 
-  <p style={styles.introText}>
-    You are viewing the public dashboard of <b>TechNodes-01</b> validator.
-  </p>
+      {error && <p style={styles.error}>{error}</p>}
 
-  <p style={styles.introText}>
-    Unlike aggregator sites, this page shows <b>only real data from my own node</b> —
-    no averages, no estimates, no hidden assumptions.
-  </p>
+      {stats && (
+        <section style={styles.card}>
+          <div style={styles.header}>
+            <div>
+              <h2 style={styles.title}>{stats.validator}</h2>
+              <p style={styles.network}>{stats.network}</p>
+            </div>
 
-  <p style={styles.introText}>
-    Here you can see how much this validator actually earns and how it performs
-    in the Shardeum network.
-  </p>
-</div>
-
-
-
-
-      {/* -------- VALIDATOR CARD -------- */}
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>{stats.validator}</h1>
-
-          {isActive && (
-            <div style={styles.active}>
-              <span style={styles.pulseDot} />
+            <div style={styles.status}>
+              <span style={styles.pulse} />
               ACTIVE
             </div>
-          )}
-        </div>
+          </div>
 
-        <p style={styles.network}>{stats.network}</p>
+          <div style={styles.grid}>
+            <div>
+              <div style={styles.label}>Total Stake</div>
+              <div style={styles.value}>
+                {stats.stake_total.toLocaleString()} ASHM
+              </div>
+            </div>
 
-        <div style={styles.grid}>
-          <Stat
-            label="Total Stake"
-            value={`${format(stats.stake_total)} ASHM`}
-          />
-          <Stat
-            label="Commission"
-            value={`${Math.round((stats.commission ?? 0) * 100)} %`}
-          />
-        </div>
+            <div>
+              <div style={styles.label}>Commission</div>
+              <div style={styles.value}>
+                {(stats.commission * 100).toFixed(0)} %
+              </div>
+            </div>
+          </div>
 
-        <p style={styles.updated}>
-          Updated: {new Date(stats.updated).toLocaleString()}
-        </p>
-      </div>
+          <div style={styles.updated}>
+            Updated: {new Date(stats.updated).toLocaleString()}
+          </div>
+        </section>
+      )}
 
-      {/* -------- REWARDS CARD -------- */}
-      <div style={styles.card}>
-        <p style={styles.label}>Rewards (24h)</p>
-
-        <p style={styles.reward}>
-          +{(rewards.rewards_24h ?? 0).toFixed(4)} ASHM
-        </p>
-
-        <p style={styles.apr}>
-          APR (est.): {(rewards.apr ?? 0).toFixed(2)} %
-        </p>
-
-        <p style={styles.updated}>
-          Updated: {new Date(rewards.updated).toLocaleString()}
-        </p>
-      </div>
+      {rewards && (
+        <section style={styles.card}>
+          <div style={styles.label}>Rewards (24h)</div>
+          <div style={styles.rewards}>
+            +{rewards.rewards_24h.toFixed(4)} ASHM
+          </div>
+          <div style={styles.apr}>
+            APR (est.): {rewards.apr.toFixed(2)} %
+          </div>
+          <div style={styles.updated}>
+            Updated: {new Date(rewards.updated).toLocaleString()}
+          </div>
+        </section>
+      )}
     </main>
   );
 }
 
-/* ---------------- COMPONENTS ---------------- */
+/* ================= STYLES ================= */
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p style={styles.label}>{label}</p>
-      <p style={styles.value}>{value}</p>
-    </div>
-  );
-}
-
-/* ---------------- HELPERS ---------------- */
-
-function format(n?: number) {
-  return new Intl.NumberFormat("en-US").format(n ?? 0);
-}
-
-/* ---------------- STYLES ---------------- */
-
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, any> = {
   page: {
     minHeight: "100vh",
-    background: "radial-gradient(circle at top, #111 0%, #000 60%)",
-    padding: "48px 20px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 24,
+    padding: "40px 16px",
+    background: "radial-gradient(circle at top, #111, #000)",
     color: "#fff",
-    fontFamily: "Inter, system-ui, sans-serif",
+    fontFamily: "system-ui, sans-serif",
   },
 
   intro: {
     maxWidth: 720,
-    marginBottom: 12,
+    margin: "0 auto 40px",
+    textAlign: "center",
     color: "#ccc",
     lineHeight: 1.6,
-    textAlign: "center",
   },
 
-  introTitle: {
-    fontSize: 22,
-    fontWeight: 700,
-    marginBottom: 12,
+  welcome: {
+    fontSize: 32,
+    marginBottom: 16,
     color: "#fff",
   },
 
-  introText: {
-    fontSize: 15,
-    marginBottom: 8,
-    opacity: 0.9,
-  },
-
   card: {
-    width: "100%",
     maxWidth: 720,
-    background: "linear-gradient(180deg, #1a1a1a, #111)",
-    borderRadius: 20,
+    margin: "0 auto 24px",
     padding: 24,
+    borderRadius: 20,
+    background: "linear-gradient(180deg, #1b1b1b, #0f0f0f)",
     boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
-    border: "1px solid rgba(255,255,255,0.06)",
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 24,
   },
 
   title: {
     fontSize: 28,
-    fontWeight: 800,
+    margin: 0,
+  },
+
+  network: {
+    color: "#aaa",
+    marginTop: 4,
   },
 
   status: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 8,
     padding: "6px 14px",
     borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 700,
     backgroundColor: "#16a34a",
-    color: "#fff",
-    position: "relative",
+    fontWeight: 700,
+    fontSize: 12,
+  },
+
+  pulse: {
+    width: 8,
+    height: 8,
+    borderRadius: "50%",
+    backgroundColor: "#22c55e",
+    animation: "pulse 1.5s infinite",
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
-    gap: 16,
-    marginTop: 16,
+    gap: 24,
   },
 
   label: {
-    fontSize: 13,
-    opacity: 0.7,
+    color: "#aaa",
+    marginBottom: 6,
   },
 
   value: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: 600,
+  },
+
+  rewards: {
+    fontSize: 28,
+    fontWeight: 700,
+    color: "#86efac",
+    marginBottom: 8,
+  },
+
+  apr: {
+    fontSize: 16,
+  },
+
+  updated: {
+    marginTop: 16,
+    fontSize: 12,
+    color: "#777",
+  },
+
+  error: {
+    textAlign: "center",
+    color: "#f87171",
+    marginBottom: 24,
   },
 };
