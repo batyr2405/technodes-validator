@@ -18,53 +18,73 @@ export default function Home() {
 
   const loadStats = async () => {
     try {
-      const res = await fetch("/api/stats", {
-        cache: "no-store",
-      });
-
-      if (!res.ok) throw new Error("Bad response");
-
-      const json = await res.json();
-      setData(json);
+      const res = await fetch("/api/stats", { cache: "no-store" });
+      if (!res.ok) throw new Error();
+      setData(await res.json());
       setError(false);
-    } catch (e) {
-      console.error("❌ Failed to load data", e);
+    } catch {
       setError(true);
     }
   };
 
   useEffect(() => {
-    loadStats(); // первый запрос сразу
-
-    const interval = setInterval(loadStats, 60_000); // каждые 60 сек
-    return () => clearInterval(interval);
+    loadStats();
+    const i = setInterval(loadStats, 60_000);
+    return () => clearInterval(i);
   }, []);
 
-  if (!data && !error) {
-    return <p style={{ padding: 20 }}>Loading…</p>;
-  }
+  if (!data) return <p className="p-6">Loading…</p>;
+
+  const isActive = data.status === "active";
 
   return (
-    <main style={{ padding: 32 }}>
-      {error && (
-        <p style={{ color: "#dc2626", marginBottom: 8 }}>
-          ⚠️ Last update failed — showing cached data
-        </p>
-      )}
+    <main className="min-h-screen flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-md space-y-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">{data.validator}</h1>
+          <span
+            className={`px-3 py-1 rounded-full text-white text-sm ${
+              isActive ? "bg-green-500" : "bg-red-500"
+            }`}
+          >
+            {data.status.toUpperCase()}
+          </span>
+        </div>
 
-      {data && (
-        <>
-          <h1>{data.validator}</h1>
-          <p>{data.network}</p>
-          <p>Status: {data.status}</p>
-          <p>Total stake: {data.stake_total} ASHM</p>
-          <p>Commission: {data.commission * 100}%</p>
-          <p>Rewards (24h): {data.rewards_24h} ASHM</p>
-          <p>
-            Updated: {new Date(data.updated).toLocaleString()}
+        <p className="text-gray-500">{data.network}</p>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Stat label="Stake" value={`${data.stake_total} ASHM`} />
+          <Stat label="Commission" value={`${data.commission * 100}%`} />
+          <Stat label="Rewards (24h)" value={`+${data.rewards_24h}`} />
+          <Stat
+            label="APR"
+            value={`${(
+              (data.rewards_24h * 365 * 100) /
+              data.stake_total
+            ).toFixed(2)}%`}
+          />
+        </div>
+
+        <p className="text-xs text-gray-400 text-right">
+          Updated {new Date(data.updated).toLocaleString()}
+        </p>
+
+        {error && (
+          <p className="text-xs text-red-500">
+            ⚠️ Last update failed
           </p>
-        </>
-      )}
+        )}
+      </div>
     </main>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-gray-100 rounded-lg p-3">
+      <p className="text-xs text-gray-500">{label}</p>
+      <p className="font-semibold">{value}</p>
+    </div>
   );
 }
