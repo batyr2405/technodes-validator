@@ -1,78 +1,107 @@
-// app/page.tsx
-import RewardsCard from "./components/RewardsCard";
+"use client";
 
-export const dynamic = "force-dynamic";
+import { useEffect, useState } from "react";
 
-type Stats = {
-  validator: string;
-  network: string;
-  status: string;
-  commission: number;
-  stake_total: number;
-  updated: string;
+type RewardsResponse = {
+  ok: boolean;
+  rewards_24h?: number;
+  updated?: string;
+  error?: string;
 };
 
-export default async function Page() {
-  const res = await fetch(
-    "https://technodes-validator.vercel.app/api/stats",
-    { cache: "no-store" }
-  );
+export default function Home() {
+  const [data, setData] = useState<RewardsResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!res.ok) {
-    throw new Error("Failed to load stats");
+  useEffect(() => {
+    const loadRewards = async () => {
+      try {
+        const res = await fetch("/api/rewards", {
+          cache: "no-store",
+        });
+
+        const json = await res.json();
+
+        if (!res.ok || json.ok === false) {
+          throw new Error(json.error || "Failed to load rewards");
+        }
+
+        setData(json);
+      } catch (e: any) {
+        setError(e.message || "Client error");
+      }
+    };
+
+    loadRewards();
+  }, []);
+
+  if (error) {
+    return (
+      <main style={styles.page}>
+        <div style={{ ...styles.card, borderColor: "#dc2626" }}>
+          <h1 style={{ color: "#dc2626" }}>❌ Failed to load rewards</h1>
+          <p>{error}</p>
+        </div>
+      </main>
+    );
   }
 
-  const data: Stats = await res.json();
-
-  const isActive = data.status?.toLowerCase() === "active";
+  if (!data) {
+    return (
+      <main style={styles.page}>
+        <div style={styles.card}>
+          <h1>⏳ Loading rewards…</h1>
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-neutral-950 text-white p-6">
-      <div className="max-w-xl mx-auto space-y-6">
+    <main style={styles.page}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>Rewards (24h)</h1>
 
-        {/* Validator card */}
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5 space-y-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold">{data.validator}</h1>
-
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-semibold
-                ${isActive ? "bg-green-600 animate-pulse" : "bg-red-600"}
-              `}
-            >
-              {data.status?.toUpperCase()}
-            </span>
-          </div>
-
-          <div className="text-sm text-neutral-400">
-            {data.network}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 pt-3 text-sm">
-            <div>
-              <div className="text-neutral-400">Total Stake</div>
-              <div className="font-mono">
-                {data.stake_total.toLocaleString()} ASHM
-              </div>
-            </div>
-
-            <div>
-              <div className="text-neutral-400">Commission</div>
-              <div className="font-mono">
-                {(data.commission * 100).toFixed(0)} %
-              </div>
-            </div>
-          </div>
-
-          <div className="text-xs text-neutral-500 pt-2">
-            Updated: {new Date(data.updated).toLocaleString()}
-          </div>
+        <div style={styles.value}>
+          +{data.rewards_24h?.toFixed(6)} ASHM
         </div>
 
-        {/* Rewards block (Client Component) */}
-        <RewardsCard />
-
+        <div style={styles.updated}>
+          Updated: {new Date(data.updated!).toLocaleString()}
+        </div>
       </div>
     </main>
   );
 }
+
+const styles: any = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#0b0b0f",
+    color: "#fff",
+  },
+  card: {
+    background: "#111827",
+    padding: "32px",
+    borderRadius: "16px",
+    minWidth: "320px",
+    textAlign: "center",
+    border: "1px solid #1f2937",
+  },
+  title: {
+    fontSize: "20px",
+    marginBottom: "12px",
+  },
+  value: {
+    fontSize: "28px",
+    fontWeight: "bold",
+    color: "#22c55e",
+  },
+  updated: {
+    marginTop: "12px",
+    fontSize: "12px",
+    opacity: 0.6,
+  },
+};
