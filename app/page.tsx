@@ -1,4 +1,6 @@
-export const dynamic = "force-dynamic";
+"use client";
+
+import { useEffect, useState } from "react";
 
 type Stats = {
   validator: string;
@@ -10,20 +12,40 @@ type Stats = {
   updated: string;
 };
 
-function formatNumber(n: number) {
-  return new Intl.NumberFormat("en-US").format(n);
-}
+export default function Home() {
+  const [data, setData] = useState<Stats | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-export default async function Home() {
-  const res = await fetch("http://62.84.177.12/stats.json", {
-    cache: "no-store",
-  });
+  const loadStats = async () => {
+    try {
+      const res = await fetch("http://62.84.177.12/stats.json", {
+        cache: "no-store",
+      });
 
-  if (!res.ok) {
-    throw new Error("Failed to load stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (e) {
+      setError("Failed to load data");
+    }
+  };
+
+  useEffect(() => {
+    loadStats(); // сразу при загрузке
+
+    const timer = setInterval(loadStats, 30_000); // каждые 30 сек
+    return () => clearInterval(timer);
+  }, []);
+
+  if (error) {
+    return <div style={styles.page}>❌ {error}</div>;
   }
 
-  const data: Stats = await res.json();
+  if (!data) {
+    return <div style={styles.page}>⏳ Loading…</div>;
+  }
 
   const apr =
     data.stake_total > 0
@@ -33,46 +55,33 @@ export default async function Home() {
   const isActive = data.status.toLowerCase() === "active";
 
   return (
-    <main style={{ padding: 40, fontFamily: "system-ui" }}>
-      <div
-        style={{
-          maxWidth: 520,
-          margin: "0 auto",
-          border: "1px solid #e5e7eb",
-          borderRadius: 12,
-          padding: 24,
-        }}
-      >
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <h1 style={{ fontSize: 24 }}>{data.validator}</h1>
+    <main style={styles.page}>
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>{data.validator}</h1>
+
           <span
             style={{
-              width: 72,
-              height: 72,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#fff",
-              background: isActive ? "#16a34a" : "#dc2626",
-              fontSize: 12,
-              fontWeight: 600,
-              letterSpacing: 0.5,  
+              ...styles.status,
+              backgroundColor: isActive ? "#16a34a" : "#dc2626",
             }}
           >
             {data.status.toUpperCase()}
           </span>
         </div>
 
-        <p style={{ color: "#6b7280", marginBottom: 20 }}>{data.network}</p>
+        <p style={styles.network}>{data.network}</p>
 
-        <div style={{ display: "grid", gap: 12 }}>
-          <Stat label="Total Stake" value={`${formatNumber(data.stake_total)} ASHM`} />
+        <div style={styles.grid}>
+          <Stat label="Total Stake" value={`${data.stake_total.toLocaleString()} ASHM`} />
           <Stat label="Commission" value={`${(data.commission * 100).toFixed(0)} %`} />
           <Stat label="Rewards (24h)" value={`+${data.rewards_24h.toFixed(4)} ASHM`} />
           <Stat label="APR (est.)" value={`${apr.toFixed(2)} %`} />
-          <Stat label="Updated" value={new Date(data.updated).toLocaleString()} />
         </div>
+
+        <p style={styles.updated}>
+          Updated: {new Date(data.updated).toLocaleString()}
+        </p>
       </div>
     </main>
   );
@@ -80,9 +89,75 @@ export default async function Home() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div style={{ display: "flex", justifyContent: "space-between" }}>
-      <span style={{ color: "#6b7280" }}>{label}</span>
-      <strong>{value}</strong>
+    <div style={styles.stat}>
+      <span style={styles.statLabel}>{label}</span>
+      <span style={styles.statValue}>{value}</span>
     </div>
   );
 }
+
+const styles: Record<string, React.CSSProperties> = {
+  page: {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#f8fafc",
+    fontFamily: "system-ui, sans-serif",
+  },
+  card: {
+    background: "#fff",
+    padding: 32,
+    borderRadius: 16,
+    width: 420,
+    boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+  },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 700,
+  },
+  status: {
+    width: 72,
+    height: 72,
+    borderRadius: "50%",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: 600,
+  },
+  network: {
+    marginTop: 8,
+    color: "#64748b",
+  },
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: 16,
+    marginTop: 24,
+  },
+  stat: {
+    display: "flex",
+    flexDirection: "column",
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#64748b",
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 600,
+  },
+  updated: {
+    marginTop: 24,
+    fontSize: 12,
+    color: "#94a3b8",
+    textAlign: "right",
+  },
+};
