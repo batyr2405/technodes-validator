@@ -1,4 +1,33 @@
 export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const res = await fetch(
+    "http://62.84.177.12/stats.json",
+    { cache: "no-store" }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to load stats");
+  }
+
+  const data = await res.json();
+
+  return (
+    <main className="p-8 space-y-2">
+      <h1 className="text-2xl font-bold">{data.validator}</h1>
+
+      <p>Network: {data.network}</p>
+      <p>Status: {data.status}</p>
+      <p>Commission: {data.commission * 100}%</p>
+      <p>Total stake: {data.stake_total}</p>
+      <p>Rewards (24h): {data.rewards_24h} ASHM</p>
+      <p>Updated: {new Date(data.updated).toLocaleString()}</p>
+    </main>
+  );
+}
+
+
+
 import fs from "fs/promises";
 import path from "path";
 
