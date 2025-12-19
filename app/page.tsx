@@ -1,36 +1,5 @@
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const res = await fetch(
-    "http://62.84.177.12/stats.json",
-    { cache: "no-store" }
-  );
-
-  if (!res.ok) {
-    throw new Error("Failed to load stats");
-  }
-
-  const data = await res.json();
-
-  return (
-    <main className="p-8 space-y-2">
-      <h1 className="text-2xl font-bold">{data.validator}</h1>
-
-      <p>Network: {data.network}</p>
-      <p>Status: {data.status}</p>
-      <p>Commission: {data.commission * 100}%</p>
-      <p>Total stake: {data.stake_total}</p>
-      <p>Rewards (24h): {data.rewards_24h} ASHM</p>
-      <p>Updated: {new Date(data.updated).toLocaleString()}</p>
-    </main>
-  );
-}
-
-
-
-import fs from "fs/promises";
-import path from "path";
-
 type Stats = {
   validator: string;
   network: string;
@@ -45,48 +14,58 @@ function formatNumber(n: number) {
   return new Intl.NumberFormat("en-US").format(n);
 }
 
-function timeAgo(date: string) {
-  const diff = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  return `${Math.floor(diff / 3600)}h ago`;
-}
-
-export const revalidate = 60; // авто-обновление каждые 60 сек
-
 export default async function Home() {
-  const filePath = path.join(process.cwd(), "public", "stats.json");
-  const file = await fs.readFile(filePath, "utf-8");
-  const data: Stats = JSON.parse(file);
+  const res = await fetch("http://62.84.177.12/stats.json", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to load stats");
+  }
+
+  const data: Stats = await res.json();
+
   const apr =
-  data.stake_total > 0
-    ? (data.rewards_24h * 365 * 100) / data.stake_total
-    : 0;
+    data.stake_total > 0
+      ? (data.rewards_24h * 365 * 100) / data.stake_total
+      : 0;
 
   const isActive = data.status.toLowerCase() === "active";
 
   return (
-    <main style={styles.page}>
-      <div style={styles.card}>
-        <div style={styles.header}>
-          <h1 style={styles.title}>{data.validator}</h1>
+    <main style={{ padding: 40, fontFamily: "system-ui" }}>
+      <div
+        style={{
+          maxWidth: 520,
+          margin: "0 auto",
+          border: "1px solid #e5e7eb",
+          borderRadius: 12,
+          padding: 24,
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <h1 style={{ fontSize: 24 }}>{data.validator}</h1>
           <span
             style={{
-              ...styles.status,
-              backgroundColor: isActive ? "#16a34a" : "#dc2626",
+              padding: "4px 10px",
+              borderRadius: 999,
+              color: "#fff",
+              background: isActive ? "#16a34a" : "#dc2626",
+              fontSize: 12,
             }}
           >
             {data.status.toUpperCase()}
           </span>
         </div>
 
-        <p style={styles.network}>{data.network}</p>
+        <p style={{ color: "#6b7280", marginBottom: 20 }}>{data.network}</p>
 
-        <div style={styles.grid}>
+        <div style={{ display: "grid", gap: 12 }}>
           <Stat label="Total Stake" value={`${formatNumber(data.stake_total)} ASHM`} />
           <Stat label="Commission" value={`${(data.commission * 100).toFixed(0)} %`} />
           <Stat label="Rewards (24h)" value={`+${data.rewards_24h.toFixed(4)} ASHM`} />
           <Stat label="APR (est.)" value={`${apr.toFixed(2)} %`} />
+          <Stat label="Updated" value={new Date(data.updated).toLocaleString()} />
         </div>
       </div>
     </main>
@@ -95,63 +74,9 @@ export default async function Home() {
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <div style={styles.label}>{label}</div>
-      <div style={styles.value}>{value}</div>
+    <div style={{ display: "flex", justifyContent: "space-between" }}>
+      <span style={{ color: "#6b7280" }}>{label}</span>
+      <strong>{value}</strong>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  page: {
-    minHeight: "100vh",
-    background: "#0f172a",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    color: "#e5e7eb",
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-  card: {
-    background: "#020617",
-    padding: 32,
-    borderRadius: 16,
-    width: 380,
-    boxShadow: "0 20px 40px rgba(0,0,0,.4)",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 600,
-  },
-  status: {
-    padding: "4px 10px",
-    borderRadius: 999,
-    fontSize: 12,
-    fontWeight: 600,
-    color: "#fff",
-  },
-  network: {
-    marginTop: 6,
-    color: "#94a3b8",
-  },
-  grid: {
-    marginTop: 24,
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 16,
-  },
-  label: {
-    fontSize: 12,
-    color: "#94a3b8",
-  },
-  value: {
-    marginTop: 4,
-    fontSize: 16,
-    fontWeight: 500,
-  },
-};
