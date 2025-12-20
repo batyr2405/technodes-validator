@@ -174,39 +174,61 @@ const [error, setError] = useState<string | null>(null);
            REWARDS CARD
         ========================= */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
-          <div className="text-sm text-gray-400">Rewards (24h)</div>
+          {/* TITLE */}
+          <div className="flex items-center justify-between">
+             <div className="text-sm text-gray-400">🛢️ Rewards (24h)</div>
+             <div className="text-xs text-gray-500">live</div>
+        </div>
 
-          {error && (
-            <div className="text-red-400 text-sm mt-2">{error}</div>
-          )}
+           {/* ERROR */}
+           {error && (
+             <div className="text-red-400 text-sm mt-3">
+               {error}
+             </div>
+           )}
 
-          {!rewards && !error && (
-            <div className="text-gray-500 mt-2">Loading...</div>
-          )}
+            {/* LOADING */}
+            {!rewards && !error && (
+               <div className="text-gray-500 mt-4">
+                 Loading rewards…
+               </div>
+            )}
 
-          {rewards && (
-            <>
-              {/* VALUE + OIL PUMP */}
-              <div className="flex items-center gap-3 mt-3">
-                <span className="oil-pump text-2xl select-none">🛢️</span>
+             {/* DATA */}
+             {rewards && (
+               <>
+             {/* VALUE */}
+             <div className="flex items-center gap-3 mt-4">
+               <span className="oil-pump text-3xl select-none">🛢️</span>
 
-                <div className="text-3xl font-bold text-green-400">
-                  +{rewards.rewards_24h.toFixed(4)} ASHM
-                </div>
+               <div className="text-3xl font-bold text-green-400">
+                 +{rewards.rewards_24h.toFixed(4)} ASHM
+               </div>
+             </div>
 
-              <div className="text-sm text-gray-300 mt-2">
-                APR (est.): 0.00 %
-              </div>
+             {/* APR */}
+             <div className="text-sm text-gray-300 mt-2">
+               APR (est.): <span className="text-gray-400">—</span>
+             </div>
 
-              <div className="text-xs text-gray-500 mt-2">
-                Updated: {new Date(rewards.updated).toLocaleString()}
-              </div>
+             {/* UPDATED */}
+             <div className="text-xs text-gray-500 mt-3">
+               Updated: {new Date(rewards.updated).toLocaleString()}
+             </div>
 
-              <div className="text-xs text-gray-400 mt-1">
-                Auto-updated every 30 seconds
-              </div>
-            </>
-          )}
+             {/* AUTO UPDATE */}
+             <div className="text-xs text-gray-400 mt-1">
+               Auto-updated every 30 seconds
+             </div>
+           </>
+         )}
+       </div>
+
+
+
+
+
+
 
         {/* =========================
            HEALTH
