@@ -66,7 +66,6 @@ const [error, setError] = useState<string | null>(null);
 };
 
 
-  /* временный лог */
 
 const loadStats = async () => {
   try {
