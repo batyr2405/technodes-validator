@@ -32,8 +32,8 @@ export default function Page() {
   ========================= */
 const [stats, setStats] = useState<Stats | null>(null);  
 const [rewards, setRewards] = useState<RewardsResponse | null>(null);
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+const [health, setHealth] = useState<HealthResponse | null>(null);
+const [error, setError] = useState<string | null>(null);
 
   /* =========================
      LOAD REWARDS
@@ -64,6 +64,23 @@ const [rewards, setRewards] = useState<RewardsResponse | null>(null);
     // тихо падаем, UI сам покажет "--"
   }
 };
+
+
+  /* временный лог
+
+const loadStats = async () => {
+  try {
+    const res = await fetch("/api/stats", { cache: "no-store" });
+    const data = await res.json();
+    console.log("STATS:", data);
+    setStats(data);
+  } catch (e) {
+    console.error("Stats failed", e);
+  }
+};
+
+
+
   /* =========================
      LOAD HEALTH
   ========================= */
@@ -85,10 +102,12 @@ const [rewards, setRewards] = useState<RewardsResponse | null>(null);
   useEffect(() => {
     loadRewards();
     loadHealth();
+    loadStats();
 
     const timer = setInterval(() => {
       loadRewards();
       loadHealth();
+      loadStats();
     }, 30_000);
 
     return () => clearInterval(timer);
