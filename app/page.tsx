@@ -3,18 +3,18 @@
 import { useEffect, useState } from "react";
 
 type Stats = {
-  validator?: string;
-  network?: string;
-  status?: string;
-  stake_total?: number;
-  commission?: number;
-  updated?: string;
+  validator: string;
+  network: string;
+  status: string;
+  commission: number;
+  stake_total: number;
+  updated: string;
 };
 
 type Rewards = {
-  rewards_24h?: number;
-  apr?: number;
-  updated?: string;
+  rewards_24h: number;
+  apr: number;
+  updated: string;
 };
 
 export default function Page() {
@@ -26,138 +26,149 @@ export default function Page() {
     const load = async () => {
       try {
         const s = await fetch("/api/stats", { cache: "no-store" });
-        if (!s.ok) throw new Error("stats failed");
-        const statsData = await s.json();
-        setStats(statsData ?? {});
+        if (!s.ok) throw new Error("stats");
+        setStats(await s.json());
 
         const r = await fetch("/api/rewards", { cache: "no-store" });
-        if (!r.ok) throw new Error("rewards failed");
-        const rewardsData = await r.json();
-        setRewards(rewardsData ?? {});
+        if (!r.ok) throw new Error("rewards");
+        setRewards(await r.json());
       } catch {
         setError("Failed to load data");
       }
     };
 
     load();
+    const t = setInterval(load, 30_000);
+    return () => clearInterval(t);
   }, []);
 
-  /* ---------- SAFE VALUES ---------- */
-  const stake = Number(stats?.stake_total ?? 0);
-  const commission = Number(stats?.commission ?? 0);
-  const rewards24h = Number(rewards?.rewards_24h ?? 0);
-  const apr = Number(rewards?.apr ?? 0);
+  if (error) {
+    return <main style={{ padding: 40, color: "#f87171" }}>{error}</main>;
+  }
+
+  if (!stats || !rewards) {
+    return <main style={{ padding: 40, color: "#aaa" }}>Loading…</main>;
+  }
+
+  const isActive = stats.status.toLowerCase() === "active";
 
   return (
     <main style={styles.page}>
-      <section style={styles.intro}>
+      {/* INTRO */}
+      <div style={styles.intro}>
         <h1 style={styles.welcome}>Welcome 👋</h1>
-        <p>
-          You are viewing the public dashboard of{" "}
-          <b>TechNodes-01</b> validator.
+        <p style={styles.text}>
+          You are viewing the public dashboard of <b>TechNodes-01</b> validator.
         </p>
-        <p>
-          This page shows <b>only real data from my own node</b> —
-          no averages, no assumptions.
+        <p style={styles.text}>
+          This page shows <b>only real data from my own node</b> — no averages, no assumptions.
         </p>
-        <p>
+        <p style={styles.text}>
           Track real rewards, uptime and performance in the Shardeum network.
         </p>
-      </section>
+      </div>
 
-      {error && <p style={styles.error}>{error}</p>}
-
-      {stats && (
-        <section style={styles.card}>
-          <div style={styles.header}>
-            <div>
-              <h2 style={styles.title}>{stats.validator ?? "TechNodes-01"}</h2>
-              <p style={styles.network}>{stats.network ?? "Shardeum"}</p>
-            </div>
-
-            <div style={styles.status}>
-              <span style={styles.pulse} />
-              ACTIVE
-            </div>
+      {/* VALIDATOR CARD */}
+      <div style={styles.card}>
+        <div style={styles.header}>
+          <div>
+            <h2 style={styles.title}>TechNodes-01</h2>
+            <div style={styles.sub}>Shardeum</div>
           </div>
 
-          <div style={styles.grid}>
-            <div>
-              <div style={styles.label}>Total Stake</div>
-              <div style={styles.value}>
-                {stake.toLocaleString()} ASHM
-              </div>
-            </div>
+          <div style={styles.status}>
+            <span style={{ ...styles.dot, animation: "pulse 1.5s infinite" }} />
+            ACTIVE
+          </div>
+        </div>
 
-            <div>
-              <div style={styles.label}>Commission</div>
-              <div style={styles.value}>
-                {(commission * 100).toFixed(0)} %
-              </div>
+        <div style={styles.grid}>
+          <div>
+            <div style={styles.label}>Total Stake</div>
+            <div style={styles.value}>
+              {stats.stake_total.toLocaleString()} ASHM
             </div>
           </div>
 
-          <div style={styles.updated}>
-            Updated:{" "}
-            {stats.updated
-              ? new Date(stats.updated).toLocaleString()
-              : "—"}
+          <div>
+            <div style={styles.label}>Commission</div>
+            <div style={styles.value}>
+              {(stats.commission * 100).toFixed(0)} %
+            </div>
           </div>
-        </section>
-      )}
+        </div>
 
-      {rewards && (
-        <section style={styles.card}>
-          <div style={styles.label}>Rewards (24h)</div>
-          <div style={styles.rewards}>
-            +{rewards24h.toFixed(4)} ASHM
-          </div>
-          <div style={styles.apr}>
-            APR (est.): {apr.toFixed(2)} %
-          </div>
-          <div style={styles.updated}>
-            Updated:{" "}
-            {rewards.updated
-              ? new Date(rewards.updated).toLocaleString()
-              : "—"}
-          </div>
-        </section>
-      )}
+        <div style={styles.updated}>
+          Updated: {new Date(stats.updated).toLocaleString()}
+        </div>
+      </div>
+
+      {/* REWARDS CARD */}
+      <div style={styles.card}>
+        <div style={styles.label}>Rewards (24h)</div>
+
+        <div style={styles.reward}>
+          +{rewards.rewards_24h.toFixed(4)} ASHM
+        </div>
+
+        <div style={styles.value}>
+          APR (est.): {rewards.apr.toFixed(2)} %
+        </div>
+
+        <div style={styles.updated}>
+          Updated: {new Date(rewards.updated).toLocaleString()}
+        </div>
+      </div>
+
+      {/* ANIMATION */}
+      <style jsx>{`
+        @keyframes pulse {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
+        }
+      `}</style>
     </main>
   );
 }
 
 /* ================= STYLES ================= */
 
-const styles: Record<string, any> = {
+const styles: any = {
   page: {
     minHeight: "100vh",
-    padding: "40px 16px",
-    background: "radial-gradient(circle at top, #111, #000)",
+    background: "#000",
     color: "#fff",
-    fontFamily: "system-ui, sans-serif",
+    padding: "60px 24px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    gap: 32,
   },
 
   intro: {
     maxWidth: 720,
-    margin: "0 auto 40px",
     textAlign: "center",
     color: "#ccc",
-    lineHeight: 1.6,
   },
 
   welcome: {
-    fontSize: 32,
+    fontSize: 36,
     marginBottom: 16,
     color: "#fff",
   },
 
+  text: {
+    marginBottom: 8,
+    lineHeight: 1.6,
+  },
+
   card: {
+    width: "100%",
     maxWidth: 720,
-    margin: "0 auto 24px",
-    padding: 24,
+    background: "linear-gradient(180deg,#111,#0b0b0b)",
     borderRadius: 20,
-    background: "linear-gradient(180deg, #1b1b1b, #0f0f0f)",
+    padding: 24,
     boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
   },
 
@@ -170,69 +181,55 @@ const styles: Record<string, any> = {
 
   title: {
     fontSize: 28,
-    margin: 0,
+    fontWeight: 700,
   },
 
-  network: {
+  sub: {
     color: "#aaa",
-    marginTop: 4,
   },
 
   status: {
-    display: "inline-flex",
+    display: "flex",
     alignItems: "center",
     gap: 8,
-    padding: "6px 14px",
-    borderRadius: 999,
-    backgroundColor: "#16a34a",
-    fontWeight: 700,
-    fontSize: 12,
+    color: "#22c55e",
+    fontWeight: 600,
   },
 
-  pulse: {
-    width: 8,
-    height: 8,
+  dot: {
+    width: 10,
+    height: 10,
     borderRadius: "50%",
-    backgroundColor: "#22c55e",
-    animation: "pulse 1.5s infinite",
+    background: "#22c55e",
   },
 
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 24,
+    marginBottom: 16,
   },
 
   label: {
     color: "#aaa",
-    marginBottom: 6,
+    marginBottom: 4,
   },
 
   value: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: 600,
   },
 
-  rewards: {
-    fontSize: 28,
+  reward: {
+    fontSize: 32,
     fontWeight: 700,
     color: "#86efac",
-    marginBottom: 8,
-  },
-
-  apr: {
-    fontSize: 16,
+    margin: "12px 0",
   },
 
   updated: {
-    marginTop: 16,
-    fontSize: 12,
-    color: "#777",
-  },
-
-  error: {
-    textAlign: "center",
-    color: "#f87171",
-    marginBottom: 24,
+    color: "#666",
+    fontSize: 13,
+    marginTop: 12,
   },
 };
