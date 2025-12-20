@@ -201,11 +201,15 @@ const loadStats = async () => {
 
           {rewards && (
             <>
-              <div className="text-3xl font-bold text-green-400 mt-2">
-                +{rewards.rewards_24h.toFixed(4)} ASHM
-              </div>
+              {/* VALUE + OIL PUMP */}
+              <div className="flex items-center gap-3 mt-3">
+                <span className="oil-pump text-2xl select-none">🛢️</span>
 
-              <div className="text-sm text-gray-300 mt-1">
+                <div className="text-3xl font-bold text-green-400">
+                  +{rewards.rewards_24h.toFixed(4)} ASHM
+                </div>
+
+              <div className="text-sm text-gray-300 mt-2">
                 APR (est.): 0.00 %
               </div>
 

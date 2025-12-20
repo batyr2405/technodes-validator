@@ -20,3 +20,17 @@ body {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
   }
 }
+
+@keyframes pump {
+  0%   { transform: rotate(0deg); }
+  25%  { transform: rotate(-12deg); }
+  50%  { transform: rotate(0deg); }
+  75%  { transform: rotate(8deg); }
+  100% { transform: rotate(0deg); }
+}
+
+.oil-pump {
+  display: inline-block;
+  animation: pump 2.5s ease-in-out infinite;
+  transform-origin: bottom center;
+}
