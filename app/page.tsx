@@ -5,6 +5,14 @@ import { useEffect, useState } from "react";
 /* =========================
    TYPES
 ========================= */
+type Stats = {
+  validator: string;
+  network: string;
+  status: string;
+  commission: number;
+  stake_total: number;
+};
+
 type RewardsResponse = {
   rewards_24h: number;
   updated: string;
@@ -22,7 +30,8 @@ export default function Page() {
   /* =========================
      STATE
   ========================= */
-  const [rewards, setRewards] = useState<RewardsResponse | null>(null);
+const [stats, setStats] = useState<Stats | null>(null);  
+const [rewards, setRewards] = useState<RewardsResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -44,7 +53,17 @@ export default function Page() {
       setError("Failed to load rewards");
     }
   };
+  const loadStats = async () => {
+  try {
+    const res = await fetch("/api/stats", { cache: "no-store" });
+    if (!res.ok) throw new Error("Failed stats");
 
+    const data = await res.json();
+    setStats(data);
+  } catch {
+    // тихо падаем, UI сам покажет "--"
+  }
+};
   /* =========================
      LOAD HEALTH
   ========================= */
