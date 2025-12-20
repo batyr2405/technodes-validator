@@ -1,6 +1,35 @@
 "use client";
 
 import { useEffect, useState } from "react";
+type Health = {
+  status?: string;
+  rpc?: string;
+  last_check?: string;
+};
+export default function Page() {
+  const [health, setHealth] = useState<Health>({});
+  const [healthError, setHealthError] = useState(false);
+
+  const loadHealth = async () => {
+    try {
+      const res = await fetch("http://62.84.177.12:8091/health", {
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setHealth(data);
+      setHealthError(false);
+    } catch {
+      setHealthError(true);
+    }
+  };
+
+  useEffect(() => {
+    loadHealth();
+    const i = setInterval(loadHealth, 30000);
+    return () => clearInterval(i);
+  }, []);
+
 
 /* =========================================================
    PAGE
@@ -135,6 +164,46 @@ export default function Page() {
     </main>
   );
 }
+
+
+{/* ================= STATUS ================= */}
+<div style={styles.card}>
+  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+    <div
+      style={{
+        width: 14,
+        height: 14,
+        borderRadius: "50%",
+        backgroundColor:
+          health.status === "active" && !healthError ? "#22c55e" : "#ef4444",
+        animation:
+          health.status === "active" && !healthError
+            ? "pulse 1.5s infinite"
+            : "none",
+      }}
+    />
+    <strong>Status</strong>
+  </div>
+
+  <div style={{ marginTop: 8, fontSize: 18 }}>
+    {healthError ? "offline" : health.status ?? "loading"}
+  </div>
+
+  <div style={styles.muted}>
+    RPC: {healthError ? "unavailable" : health.rpc ?? "-"}
+  </div>
+
+  <div style={styles.muted}>
+    Updated:{" "}
+    {health.last_check
+      ? new Date(health.last_check).toLocaleString()
+      : "-"}
+  </div>
+
+  <div style={styles.hint}>Auto-updated every 30 seconds</div>
+</div>
+
+
 
 /* =========================================================
    STYLES
