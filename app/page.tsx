@@ -142,10 +142,10 @@ const [error, setError] = useState<string | null>(null);
             {/* STATUS */}
             <div className="flex items-center gap-2">
               <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 animate-[pulse_1.5s_infinite]" />
+                <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 status-glow" />
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
               </span>
-              <span className="text-sm font-medium text-green-400">ACTIVE</span>
+              <span className="text-sm font-medium text-green-400 tracking-wide">ACTIVE</span>
             </div>
           </div>
 
@@ -176,8 +176,11 @@ const [error, setError] = useState<string | null>(null);
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
           {/* TITLE */}
           <div className="flex items-center justify-between">
-             <div className="text-sm text-gray-400">🛢️ Rewards (24h)</div>
-             <div className="text-xs text-gray-500">live</div>
+            <div className="flex items-center gap-2">
+              <span className="oil-pump text-2x1 select-none">🛢️ </span>
+              <span className="text-sm text-gray-400">Rewards (24h)</span>
+            </div>
+            <span className="text-xs text-gray-500">live</span>
         </div>
 
            {/* ERROR */}
@@ -187,19 +190,17 @@ const [error, setError] = useState<string | null>(null);
              </div>
            )}
 
-            {/* LOADING */}
+            {/* 🔹 LOADING SKELETON — ВОТ ТУТ 🔹 */}
             {!rewards && !error && (
-               <div className="text-gray-500 mt-4">
-                 Loading rewards…
-               </div>
+               <div className="skeleton h-8 w-48 rounded mt-3" />
             )}
 
              {/* DATA */}
              {rewards && (
                <>
              {/* VALUE */}
-             <div className="flex items-center gap-3 mt-4">
-               <span className="oil-pump text-3xl select-none">🛢️</span>
+             <div className="flex items-center gap-3 mt-3">
+               <span className="oil-pump text-2xl select-none">🛢️</span>
 
                <div className="text-3xl font-bold text-green-400">
                  +{rewards.rewards_24h.toFixed(4)} ASHM
@@ -242,10 +243,10 @@ const [error, setError] = useState<string | null>(null);
           {health ? (
             <>
               {/* STATUS */}
-              <div className="flex items-center gap-3 mt-4">
-                <span className="heartbeat text-2xl select-none">❤️</span>
+              <div className="flex items-center gap-3 mt-2">
+                <span className="heartbeat text-red-500 text-xl">❤️</span>
 
-                <span className="text-lg font-semibold text-green-400">
+                <span className="text-green-400 font-semibold">
                   {health.status.toUpperCase()}
                 </span>
               </div>
