@@ -51,6 +51,16 @@ export default function Page() {
   }
 
   const isActive = stats.status.toLowerCase() === "active";
+  const reward24h =
+    typeof rewards.rewards_24h === "number" ? rewards.rewards_24h : 0;
+
+  const apr =
+    typeof rewards.apr === "number" ? rewards.apr : 0;
+
+  const commission =
+    typeof stats.commission === "number" ? stats.commission : 0;
+
+
 
   return (
     <main style={styles.page}>
@@ -108,11 +118,11 @@ export default function Page() {
         <div style={styles.label}>Rewards (24h)</div>
 
         <div style={styles.reward}>
-          +{rewards.rewards_24h.toFixed(4)} ASHM
+          +{reward24h.toFixed(4)} ASHM
         </div>
 
         <div style={styles.value}>
-          APR (est.): {rewards.apr.toFixed(2)} %
+          APR (est.): {apr.toFixed(2)} %
         </div>
 
         <div style={styles.updated}>
