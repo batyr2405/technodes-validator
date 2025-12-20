@@ -176,12 +176,10 @@ const [error, setError] = useState<string | null>(null);
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
           {/* TITLE */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="oil-pump text-2x1 select-none">🛢️ </span>
-              <span className="text-sm text-gray-400">Rewards (24h)</span>
-            </div>
+              <div className="text-sm text-gray-400">Rewards (24h)</div>
+          </div>
             <span className="text-xs text-gray-500">live</span>
-        </div>
+        
 
            {/* ERROR */}
            {error && (
