@@ -66,20 +66,6 @@ const [error, setError] = useState<string | null>(null);
 };
 
 
-
-const loadStats = async () => {
-  try {
-    const res = await fetch("/api/stats", { cache: "no-store" });
-    const data = await res.json();
-    console.log("STATS:", data);
-    setStats(data);
-  } catch (e) {
-    console.error("Stats failed", e);
-  }
-};
-
-
-
   /* =========================
      LOAD HEALTH
   ========================= */
@@ -221,7 +207,6 @@ const loadStats = async () => {
               </div>
             </>
           )}
-        </div>
 
         {/* =========================
            HEALTH
