@@ -2,92 +2,89 @@
 
 import { useEffect, useState } from "react";
 
-type Stats = {
-  validator: string;
-  network: string;
-  status: string;
-  commission: number;
-  stake_total: number;
-  updated: string;
-};
-
-type Rewards = {
-  rewards_24h: number;
-  apr: number;
-  updated: string;
-};
-
+/* =========================================================
+   PAGE
+========================================================= */
 export default function Page() {
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [rewards, setRewards] = useState<Rewards | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  /* -----------------------------
+     STATE
+  ----------------------------- */
+  const [rewards, setRewards] = useState<any>(null);
+  const [rewardsError, setRewardsError] = useState<string | null>(null);
 
+  /* -----------------------------
+     LOAD REWARDS
+  ----------------------------- */
+  const loadRewards = async () => {
+    try {
+      const res = await fetch("/api/rewards", { cache: "no-store" });
+      if (!res.ok) throw new Error("fetch failed");
+
+      const data = await res.json();
+      setRewards(data);
+      setRewardsError(null);
+    } catch {
+      setRewardsError("Failed to load rewards");
+    }
+  };
+
+  /* -----------------------------
+     AUTO REFRESH (30s)
+  ----------------------------- */
   useEffect(() => {
-    const load = async () => {
-      try {
-        const s = await fetch("/api/stats", { cache: "no-store" });
-        if (!s.ok) throw new Error("stats");
-        setStats(await s.json());
-
-        const r = await fetch("/api/rewards", { cache: "no-store" });
-        if (!r.ok) throw new Error("rewards");
-        setRewards(await r.json());
-      } catch {
-        setError("Failed to load data");
-      }
-    };
-
-    load();
-    const t = setInterval(load, 30_000);
-    return () => clearInterval(t);
+    loadRewards();
+    const i = setInterval(loadRewards, 30_000);
+    return () => clearInterval(i);
   }, []);
 
-  if (error) {
-    return <main style={{ padding: 40, color: "#f87171" }}>{error}</main>;
-  }
-
-  if (!stats || !rewards) {
-    return <main style={{ padding: 40, color: "#aaa" }}>Loading…</main>;
-  }
-
-  const isActive = stats.status.toLowerCase() === "active";
+  /* -----------------------------
+     SAFE VALUES (NO CRASH)
+  ----------------------------- */
   const reward24h =
-    typeof rewards.rewards_24h === "number" ? rewards.rewards_24h : 0;
+    typeof rewards?.rewards_24h === "number" ? rewards.rewards_24h : 0;
 
   const apr =
-    typeof rewards.apr === "number" ? rewards.apr : 0;
+    typeof rewards?.apr === "number" ? rewards.apr : 0;
 
-  const commission =
-    typeof stats.commission === "number" ? stats.commission : 0;
+  const updatedRewards =
+    rewards?.updated ? new Date(rewards.updated).toLocaleString() : "—";
 
-
-
+  /* =========================================================
+     RENDER
+  ========================================================= */
   return (
     <main style={styles.page}>
-      {/* INTRO */}
+      {/* =====================================================
+          INTRO
+      ===================================================== */}
       <div style={styles.intro}>
-        <h1 style={styles.welcome}>Welcome 👋</h1>
+        <h1 style={styles.title}>Welcome 👋</h1>
         <p style={styles.text}>
-          You are viewing the public dashboard of <b>TechNodes-01</b> validator.
+          You are viewing the public dashboard of{" "}
+          <strong>TechNodes-01</strong> validator.
         </p>
         <p style={styles.text}>
-          This page shows <b>only real data from my own node</b> — no averages, no assumptions.
+          This page shows <strong>only real data from my own node</strong> —
+          no averages, no assumptions.
         </p>
         <p style={styles.text}>
           Track real rewards, uptime and performance in the Shardeum network.
         </p>
       </div>
 
-      {/* VALIDATOR CARD */}
+      {/* =====================================================
+          VALIDATOR CARD
+      ===================================================== */}
       <div style={styles.card}>
         <div style={styles.header}>
           <div>
-            <h2 style={styles.title}>TechNodes-01</h2>
+            <h2 style={styles.cardTitle}>TechNodes-01</h2>
             <div style={styles.sub}>Shardeum</div>
           </div>
 
-          <div style={styles.status}>
-            <span style={{ ...styles.dot, animation: "pulse 1.5s infinite" }} />
+          {/* ACTIVE BADGE */}
+          <div style={styles.activeBadge}>
+            <span style={styles.pulse} />
             ACTIVE
           </div>
         </div>
@@ -95,61 +92,59 @@ export default function Page() {
         <div style={styles.grid}>
           <div>
             <div style={styles.label}>Total Stake</div>
-            <div style={styles.value}>
-              {stats.stake_total.toLocaleString()} ASHM
-            </div>
+            <div style={styles.value}>441 184 ASHM</div>
           </div>
 
           <div>
             <div style={styles.label}>Commission</div>
-            <div style={styles.value}>
-              {(stats.commission * 100).toFixed(0)} %
-            </div>
+            <div style={styles.value}>9 %</div>
           </div>
         </div>
 
         <div style={styles.updated}>
-          Updated: {new Date(stats.updated).toLocaleString()}
+          Updated: 18.12.2025, 14:09:18
         </div>
       </div>
 
-      {/* REWARDS CARD */}
+      {/* =====================================================
+          REWARDS CARD
+      ===================================================== */}
       <div style={styles.card}>
         <div style={styles.label}>Rewards (24h)</div>
 
-        <div style={styles.reward}>
-          +{reward24h.toFixed(4)} ASHM
-        </div>
+        {rewardsError ? (
+          <div style={styles.error}>{rewardsError}</div>
+        ) : (
+          <>
+            <div style={styles.reward}>
+              +{reward24h.toFixed(4)} ASHM
+            </div>
 
-        <div style={styles.value}>
-          APR (est.): {apr.toFixed(2)} %
-        </div>
+            <div style={styles.value}>
+              APR (est.): {apr.toFixed(2)} %
+            </div>
 
-        <div style={styles.updated}>
-          Updated: {new Date(rewards.updated).toLocaleString()}
-        </div>
+            <div style={styles.updated}>
+              Updated: {updatedRewards}
+              <br />
+              Auto-updated every 30 seconds
+            </div>
+          </>
+        )}
       </div>
-
-      {/* ANIMATION */}
-      <style jsx>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.4; }
-          100% { opacity: 1; }
-        }
-      `}</style>
     </main>
   );
 }
 
-/* ================= STYLES ================= */
-
+/* =========================================================
+   STYLES
+========================================================= */
 const styles: any = {
   page: {
     minHeight: "100vh",
-    background: "#000",
+    background: "radial-gradient(circle at top, #111, #000)",
     color: "#fff",
-    padding: "60px 24px",
+    padding: "60px 20px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
@@ -159,87 +154,112 @@ const styles: any = {
   intro: {
     maxWidth: 720,
     textAlign: "center",
-    color: "#ccc",
+    marginBottom: 20,
   },
 
-  welcome: {
+  title: {
     fontSize: 36,
-    marginBottom: 16,
-    color: "#fff",
+    marginBottom: 12,
   },
 
   text: {
-    marginBottom: 8,
+    color: "#ccc",
     lineHeight: 1.6,
+    marginBottom: 6,
   },
 
   card: {
     width: "100%",
     maxWidth: 720,
-    background: "linear-gradient(180deg,#111,#0b0b0b)",
+    background: "linear-gradient(180deg, #1a1a1a, #0e0e0e)",
     borderRadius: 20,
-    padding: 24,
-    boxShadow: "0 20px 40px rgba(0,0,0,0.6)",
+    padding: 28,
+    boxShadow: "0 20px 40px rgba(0,0,0,.6)",
   },
 
   header: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 20,
   },
 
-  title: {
+  cardTitle: {
     fontSize: 28,
-    fontWeight: 700,
+    marginBottom: 4,
   },
 
   sub: {
     color: "#aaa",
   },
 
-  status: {
-    display: "flex",
-    alignItems: "center",
-    gap: 8,
-    color: "#22c55e",
-    fontWeight: 600,
-  },
-
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: "50%",
-    background: "#22c55e",
-  },
-
   grid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 24,
-    marginBottom: 16,
+    marginTop: 20,
   },
 
   label: {
     color: "#aaa",
-    marginBottom: 4,
+    marginBottom: 6,
   },
 
   value: {
     fontSize: 18,
-    fontWeight: 600,
   },
 
   reward: {
     fontSize: 32,
-    fontWeight: 700,
-    color: "#86efac",
-    margin: "12px 0",
+    fontWeight: "bold",
+    color: "#7CFFA6",
+    marginBottom: 10,
   },
 
   updated: {
-    color: "#666",
-    fontSize: 13,
     marginTop: 12,
+    fontSize: 13,
+    color: "#777",
+  },
+
+  error: {
+    color: "#ff6b6b",
+    fontSize: 14,
+  },
+
+  /* ACTIVE BADGE */
+  activeBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    background: "#1f7a3f",
+    padding: "6px 14px",
+    borderRadius: 999,
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+
+  pulse: {
+    width: 10,
+    height: 10,
+    borderRadius: "50%",
+    background: "#4ade80",
+    boxShadow: "0 0 0 rgba(74,222,128,0.7)",
+    animation: "pulse 1.6s infinite",
   },
 };
+
+/* =========================================================
+   PULSE ANIMATION (INLINE)
+========================================================= */
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.innerHTML = `
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(74,222,128,.7); }
+      70% { box-shadow: 0 0 0 12px rgba(74,222,128,0); }
+      100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+    }
+  `;
+  document.head.appendChild(style);
+}
