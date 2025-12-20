@@ -177,10 +177,9 @@ const [error, setError] = useState<string | null>(null);
           {/* TITLE */}
           <div className="flex items-center justify-between">
               <div className="text-sm text-gray-400">Rewards (24h)</div>
+              <div className="text-xs text-green-400">live</div>
           </div>
-            <span className="text-xs text-gray-500">live</span>
-        
-
+       
            {/* ERROR */}
            {error && (
              <div className="text-red-400 text-sm mt-3">
