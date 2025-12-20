@@ -137,7 +137,7 @@ export default function Page() {
             <div>
               <div className="text-sm text-gray-400">Commission</div>
               <div className="text-xl font-semibold">
-                9 %
+                {stats ? (stats.commission * 100).toFixed(2) : "--"} %
               </div>
             </div>
           </div>
