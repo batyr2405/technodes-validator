@@ -234,19 +234,28 @@ const [error, setError] = useState<string | null>(null);
            HEALTH
         ========================= */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
-          <div className="text-sm text-gray-400">Node health</div>
+          <div className="flex items-center justify-between">
+            <div className="text-sm text-gray-400">❤️ Node health</div>
+            <div className="text-xs text-gray-500">live</div>
+          </div>
 
           {health ? (
             <>
-              <div className="text-green-400 font-semibold mt-2">
-                Status: {health.status}
+              {/* STATUS */}
+              <div className="flex items-center gap-3 mt-4">
+                <span className="heartbeat text-2xl select-none">❤️</span>
+
+                <span className="text-lg font-semibold text-green-400">
+                  {health.status.toUpperCase()}
+                </span>
               </div>
-              <div className="text-xs text-gray-500 mt-1">
+              {/* UPDATED */}
+              <div className="text-xs text-gray-500 mt-2">
                 Updated: {new Date(health.updated).toLocaleString()}
               </div>
             </>
           ) : (
-            <div className="text-gray-500 mt-2">
+            <div className="text-gray-500 mt-4">              
               Health data unavailable
             </div>
           )}
