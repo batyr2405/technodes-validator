@@ -2,57 +2,68 @@
 
 import { useEffect, useState } from "react";
 
-type Rewards = {
+type RewardsData = {
   rewards_24h: number;
   apr: number;
   updated: string;
 };
 
 export default function RewardsCard() {
-  const [data, setData] = useState<Rewards | null>(null);
-  const [error, setError] = useState(false);
+  const [data, setData] = useState<RewardsData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadRewards = async () => {
+    try {
+      const res = await fetch("/api/rewards", { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to load rewards");
+      const json = await res.json();
+      setData(json);
+      setError(null);
+    } catch (e) {
+      setError("Failed to load rewards");
+    }
+  };
 
   useEffect(() => {
-    fetch("/api/rewards", { cache: "no-store" })
-      .then((res) => {
-        if (!res.ok) throw new Error("Bad response");
-        return res.json();
-      })
-      .then(setData)
-      .catch(() => setError(true));
+    loadRewards();
+    const interval = setInterval(loadRewards, 60_000); // ⏱ 60 сек
+    return () => clearInterval(interval);
   }, []);
 
   if (error) {
-    return (
-      <div className="rounded-2xl border border-red-500 bg-red-950 p-4 text-sm">
-        ❌ Failed to load rewards
-      </div>
-    );
+    return <div style={card}>❌ {error}</div>;
   }
 
   if (!data) {
-    return (
-      <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-4 text-sm text-neutral-400">
-        Loading rewards…
-      </div>
-    );
+    return <div style={card}>⏳ Loading rewards...</div>;
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-800 bg-neutral-900 p-5 space-y-2">
-      <div className="text-sm text-neutral-400">Rewards (24h)</div>
-
-      <div className="text-2xl font-mono font-bold text-green-400">
-        +{data.rewards_24h.toFixed(4)} ASHM
-      </div>
-
-      <div className="text-sm">
-        APR (est.): <span className="font-mono">{data.apr.toFixed(2)} %</span>
-      </div>
-
-      <div className="text-xs text-neutral-500">
-        Updated: {new Date(data.updated).toLocaleString()}
-      </div>
+    <div style={card}>
+      <h3>Rewards (24h)</h3>
+      <div style={value}>+{data.rewards_24h.toFixed(4)} ASHM</div>
+      <div>APR (est.): {data.apr.toFixed(2)} %</div>
+      <div style={updated}>Updated: {new Date(data.updated).toLocaleString()}</div>
     </div>
   );
 }
+
+const card = {
+  padding: 24,
+  borderRadius: 16,
+  background: "#111",
+  color: "#fff",
+  maxWidth: 420,
+};
+
+const value = {
+  fontSize: 28,
+  fontWeight: "bold",
+  color: "#6ee7b7",
+};
+
+const updated = {
+  marginTop: 8,
+  fontSize: 12,
+  opacity: 0.6,
+};
