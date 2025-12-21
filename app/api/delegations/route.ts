@@ -1,20 +1,25 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const filePath = "/var/www/technodes/delegations.json";
+    const res = await fetch("http://62.84.177.12/delegations.json", {
+      cache: "no-store",
+    });
 
-    const raw = fs.readFileSync(filePath, "utf-8");
-    const data = JSON.parse(raw);
+    if (!res.ok) {
+      return NextResponse.json(
+        { error: "delegations data unavailable" },
+        { status: 500 }
+      );
+    }
 
+    const data = await res.json();
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
-      { error: "delegations data unavailable" },
+      { error: "delegations api failed" },
       { status: 500 }
     );
   }
