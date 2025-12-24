@@ -1,69 +1,71 @@
 "use client";
 
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { useEffect, useState } from "react";
 
-type RewardsData = {
-  rewards_24h: number;
-  apr: number;
-  updated: string;
+type Point = {
+  date: string;
+  rewards: number;
 };
 
-export default function RewardsCard() {
-  const [data, setData] = useState<RewardsData | null>(null);
+export default function RewardsChart() {
+  const [data, setData] = useState<Point[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const loadRewards = async () => {
-    try {
-      const res = await fetch("/api/rewards", { cache: "no-store" });
-      if (!res.ok) throw new Error("Failed to load rewards");
-      const json = await res.json();
-      setData(json);
-      setError(null);
-    } catch (e) {
-      setError("Failed to load rewards");
-    }
-  };
-
   useEffect(() => {
-    loadRewards();
-    const interval = setInterval(loadRewards, 60_000); // ⏱ 60 сек
-    return () => clearInterval(interval);
+    fetch("/api/rewards/history", { cache: "no-store" })
+      .then(res => {
+        if (!res.ok) throw new Error("fetch failed");
+        return res.json();
+      })
+      .then(setData)
+      .catch(() => setError("Failed to load rewards history"));
   }, []);
 
   if (error) {
-    return <div style={card}>❌ {error}</div>;
+    return <div className="text-sm text-gray-500 mt-3">{error}</div>;
   }
 
-  if (!data) {
-    return <div style={card}>⏳ Loading rewards...</div>;
+  if (!data.length) {
+    return <div className="skeleton h-40 rounded mt-4" />;
   }
 
   return (
-    <div style={card}>
-      <h3>Rewards (24h)</h3>
-      <div style={value}>+{data.rewards_24h.toFixed(4)} ASHM</div>
-      <div>APR (est.): {data.apr.toFixed(2)} %</div>
-      <div style={updated}>Updated: {new Date(data.updated).toLocaleString()}</div>
+    <div className="h-40 mt-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <LineChart data={data}>
+          <XAxis
+            dataKey="date"
+            tick={{ fill: "#9ca3af", fontSize: 12 }}
+          />
+          <YAxis
+            tick={{ fill: "#9ca3af", fontSize: 12 }}
+            width={40}
+          />
+          <Tooltip
+            contentStyle={{
+              backgroundColor: "#020617",
+              border: "1px solid #1f2937",
+              borderRadius: 8,
+            }}
+            labelStyle={{ color: "#9ca3af" }}
+          />
+          <Line
+            type="monotone"
+            dataKey="rewards"
+            stroke="#22c55e"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ResponsiveContainer>
     </div>
   );
 }
-
-const card = {
-  padding: 24,
-  borderRadius: 16,
-  background: "#111",
-  color: "#fff",
-  maxWidth: 420,
-};
-
-const value = {
-  fontSize: 28,
-  fontWeight: "bold",
-  color: "#6ee7b7",
-};
-
-const updated = {
-  marginTop: 8,
-  fontSize: 12,
-  opacity: 0.6,
-};

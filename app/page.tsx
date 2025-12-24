@@ -1,5 +1,5 @@
 "use client";
-
+import RewardsChart from "./components/RewardsChart";
 import { useEffect, useState } from "react";
 
 /* =========================
@@ -269,7 +269,7 @@ const loadDelegations = async () => {
                   +{rewards.rewards_24h.toFixed(4)} ASHM
                 </div>
               </div>
-
+              <RewardsChart />
               <div className="text-xs text-gray-500 mt-3">
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
@@ -279,6 +279,17 @@ const loadDelegations = async () => {
             </>
           )}
         </div>
+
+{/* =========================
+   REWARDS HISTORY CHART
+========================= */}
+<div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
+  <div className="text-sm text-gray-400 mb-2">
+    Rewards history
+  </div>
+
+</div>
+
 
         {/* HEALTH */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
