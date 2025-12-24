@@ -49,7 +49,7 @@ export default function Page() {
   const [delegations, setDelegations] =
     useState<DelegationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-
+ const [stakeFlash, setStakeFlash] = useState(false);
   /* =========================
      LOADERS
   ========================= */
@@ -78,15 +78,24 @@ export default function Page() {
     } catch {}
   };
 
-  const loadDelegations = async () => {
-    try {
-      const res = await fetch("/api/delegations", { cache: "no-store" });
-      if (!res.ok) throw new Error();
-      const data = await res.json();
-      setDelegations(data);
-    } catch {}
-  };
+const loadDelegations = async () => {
+  try {
+    const res = await fetch("/api/delegations", { cache: "no-store" });
+    if (!res.ok) throw new Error();
 
+    const data = await res.json();
+
+    // 🔔 если есть новый стейк
+    if (data.diff && data.diff > 0) {
+      setStakeFlash(true);
+
+      // выключаем подсветку через 3 сек
+      setTimeout(() => setStakeFlash(false), 3000);
+    }
+
+    setDelegations(data);
+  } catch {}
+};
   const loadHealth = async () => {
     try {
       const res = await fetch("/api/health", { cache: "no-store" });
@@ -160,14 +169,25 @@ export default function Page() {
           <div className="grid grid-cols-2 gap-6 mt-6">
             <div>
               <div className="text-sm text-gray-400">Total Stake</div>
-              <div className="text-xl font-semibold">
+              <div
+                className={`text-xl font-semibold transition-all duration-500 ${
+                  delegatins && delegatins.diff > 0
+                   ? "text-green-400 animate-pulse"
+                   : ""
+                }`}
+           >
                 {delegations
                   ? delegations.total_stake.toLocaleString()
                   : "—"}{" "}
                 ASHM
               </div>
-            </div>
 
+              {delegations && delegatins.diff > 0 && (
+                 <div className="text-xs text-green-400 mt-1">
+                   +{delegations.diff} ASHM
+                 </div>
+               )}
+             </div> 
             <div>
               <div className="text-sm text-gray-400">Commission</div>
               <div className="text-xl font-semibold">
@@ -176,6 +196,57 @@ export default function Page() {
             </div>
           </div>
         </div>
+
+
+{delegations?.new_delegations?.length > 0 && (
+  <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 animate-pulse">
+    <div className="text-sm text-green-300 font-medium mb-1">
+      New delegation detected 🚀
+    </div>
+
+    {delegations.new_delegations.map((d, i) => (
+      <div key={i} className="text-xs text-gray-300">
+        <span className="text-green-400">
+          +{d.delta.toLocaleString()} ASHM
+        </span>{" "}
+        from{" "}
+        <span className="font-mono text-gray-400">
+          {d.delegator.slice(0, 10)}…
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+
+
+{/* =========================
+   NEW DELEGATIONS
+========================= */}
+{delegations && delegations.new_delegations.length > 0 && (
+  <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 shadow-lg animate-pulse">
+    <div className="text-sm text-green-400 font-semibold mb-3">
+      🟢 New delegation received
+    </div>
+
+    {delegations.new_delegations.map((d, idx) => (
+      <div
+        key={idx}
+        className="flex items-center justify-between text-sm text-gray-200"
+      >
+        <span className="font-mono truncate max-w-[220px]">
+          {d.delegator}
+        </span>
+
+        <span className="text-green-400 font-semibold">
+          +{d.delta} ASHM
+        </span>
+      </div>
+    ))}
+  </div>
+)}
+
+
+
 
         {/* REWARDS */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
