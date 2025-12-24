@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";   // ← ДОБАВЛЯЕМ
+export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
 
