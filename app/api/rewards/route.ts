@@ -1,36 +1,25 @@
-// app/api/rewards/route.ts
-
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic"; // ⬅️ КЛЮЧЕВОЕ
-export const revalidate = 0;            // ⬅️ КЛЮЧЕВОЕ
+export const dynamic = "force-dynamic";
+
+const SNAPSHOT_URL = "http://62.84.177.12/snapshots/rewards.json";
 
 export async function GET() {
   try {
-    const res = await fetch("http://62.84.177.12:8090/rewards/history", {
-      cache: "no-store",
-    });
+    const res = await fetch(SNAPSHOT_URL, { cache: "no-store" });
+    if (!res.ok) throw new Error("fetch failed");
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch rewards backend" },
-        { status: 500 }
-      );
-    }
-
-    const history = await res.json();
-
-    const rewards_24h =
-      history.length > 0 ? history[history.length - 1].rewards : 0;
+    const data = await res.json();
 
     return NextResponse.json({
-      rewards_24h,
-      history,
-      updated: new Date().toISOString(),
+      rewards_24h: data.rewards_24h,
+      diff: data.diff,
+      total_rewards: data.total_rewards,
+      updated: data.updated,
     });
   } catch (e) {
     return NextResponse.json(
-      { error: "Rewards API error" },
+      { error: "rewards unavailable" },
       { status: 500 }
     );
   }
