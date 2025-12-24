@@ -1,26 +1,36 @@
 import { NextResponse } from "next/server";
-
-export const dynamic = "force-dynamic";
+import fs from "fs";
+import path from "path";
 
 export async function GET() {
   try {
-    const res = await fetch(
-      "http://62.84.177.12:8090/rewards/history",
-      { cache: "no-store" }
-    );
+    const filePath = "/root/shardeum-evm/rewards.csv";
 
-    if (!res.ok) {
+    if (!fs.existsSync(filePath)) {
       return NextResponse.json(
-        { error: "failed to fetch rewards history" },
-        { status: 500 }
+        { error: "rewards.csv not found" },
+        { status: 404 }
       );
     }
 
-    const data = await res.json();
-    return NextResponse.json(data);
-  } catch (e) {
+    const raw = fs.readFileSync(filePath, "utf-8").trim();
+    const lines = raw.split("\n").slice(1); // skip header
+
+    const history = lines.map((line) => {
+      const [date, rewards] = line.split(",");
+      return {
+        date,
+        rewards: Number(rewards),
+      };
+    });
+
+    return NextResponse.json({
+      history,
+      updated: new Date().toISOString(),
+    });
+  } catch (e: any) {
     return NextResponse.json(
-      { error: "rewards history backend unreachable" },
+      { error: e.message },
       { status: 500 }
     );
   }
