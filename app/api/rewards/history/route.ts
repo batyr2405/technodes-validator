@@ -1,22 +1,21 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+
+export const dynamic = "force-dynamic";
+
+const CSV_URL = "http://62.84.177.12/rewards.csv";
 
 export async function GET() {
   try {
-    const filePath = "/root/shardeum-evm/rewards.csv";
+    const res = await fetch(CSV_URL, { cache: "no-store" });
 
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json(
-        { error: "rewards.csv not found" },
-        { status: 404 }
-      );
+    if (!res.ok) {
+      throw new Error("CSV fetch failed");
     }
 
-    const raw = fs.readFileSync(filePath, "utf-8").trim();
-    const lines = raw.split("\n").slice(1); // skip header
+    const text = await res.text();
+    const lines = text.trim().split("\n").slice(1); // skip header
 
-    const history = lines.map((line) => {
+    const history = lines.map(line => {
       const [date, rewards] = line.split(",");
       return {
         date,
@@ -24,13 +23,10 @@ export async function GET() {
       };
     });
 
-    return NextResponse.json({
-      history,
-      updated: new Date().toISOString(),
-    });
-  } catch (e: any) {
+    return NextResponse.json(history);
+  } catch (e) {
     return NextResponse.json(
-      { error: e.message },
+      { error: "Failed to load rewards history" },
       { status: 500 }
     );
   }
