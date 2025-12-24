@@ -171,7 +171,7 @@ const loadDelegations = async () => {
               <div className="text-sm text-gray-400">Total Stake</div>
               <div
                 className={`text-xl font-semibold transition-all duration-500 ${
-                  delegatins && delegatins.diff > 0
+                  delegations && delegations.diff > 0
                    ? "text-green-400 animate-pulse"
                    : ""
                 }`}
@@ -182,7 +182,7 @@ const loadDelegations = async () => {
                 ASHM
               </div>
 
-              {delegations && delegatins.diff > 0 && (
+              {delegations && delegations.diff > 0 && (
                  <div className="text-xs text-green-400 mt-1">
                    +{delegations.diff} ASHM
                  </div>
