@@ -1,33 +1,32 @@
 import { NextResponse } from "next/server";
 
-export const dynamic = "force-dynamic";
-
-const CSV_URL = "http://62.84.177.12/rewards.csv";
-
 export async function GET() {
   try {
-    const res = await fetch(CSV_URL, { cache: "no-store" });
+    // читаем CSV напрямую с твоего сервера
+    const res = await fetch("http://62.84.177.12/rewards.csv", {
+      cache: "no-store",
+    });
 
     if (!res.ok) {
-      throw new Error("CSV fetch failed");
+      throw new Error("failed to fetch rewards.csv");
     }
 
     const text = await res.text();
-    const lines = text.trim().split("\n").slice(1); // skip header
 
-    const history = lines.map(line => {
+    // Разбираем CSV
+    const lines = text.trim().split("\n").slice(1); // пропускаем header
+
+    const data = lines.map((line) => {
       const [date, rewards] = line.split(",");
+
       return {
         date,
-        rewards: Number(rewards),
+        rewards: parseFloat(rewards),
       };
     });
 
-    return NextResponse.json(history);
-  } catch (e) {
-    return NextResponse.json(
-      { error: "Failed to load rewards history" },
-      { status: 500 }
-    );
+    return NextResponse.json(data);
+  } catch (e: any) {
+    return NextResponse.json({ error: e.message }, { status: 500 });
   }
 }
