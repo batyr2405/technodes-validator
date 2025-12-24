@@ -1,7 +1,12 @@
 // force redeploy
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";   // ← ДОБАВЛЯЕМ
 export const revalidate = 0;
+
+
+
+
 export async function GET() {
   try {
     // читаем CSV напрямую с твоего сервера
