@@ -281,16 +281,21 @@ const loadDelegations = async () => {
         </div>
 
 {/* =========================
-   TOTAL REWARDS CHART
+   TOTAL REWARDS
 ========================= */}
 <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
   <div className="text-sm text-gray-400 mb-2">
-  <TotalRewards />
+    Total Rewards
+  </div>
+
+  <div className="text-3xl font-bold text-green-400 mb-4">
+    <TotalRewards />
+  </div>
+
   <div className="mt-4">
-     <RewardsChart />
+    <RewardsChart />
   </div>
 </div>
-
 
         {/* HEALTH */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
