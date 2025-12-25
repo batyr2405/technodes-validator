@@ -269,7 +269,6 @@ const loadDelegations = async () => {
                   +{rewards.rewards_24h.toFixed(4)} ASHM
                 </div>
               </div>
-              <RewardsChart />
               <div className="text-xs text-gray-500 mt-3">
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
@@ -287,7 +286,7 @@ const loadDelegations = async () => {
   <div className="text-sm text-gray-400 mb-2">
     Total Rewards
   </div>
-
+  <RewardsChart />
 </div>
 
 
