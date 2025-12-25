@@ -96,6 +96,7 @@ const loadDelegations = async () => {
     setDelegations(data);
   } catch {}
 };
+
   const loadHealth = async () => {
     try {
       const res = await fetch("/api/health", { cache: "no-store" });
@@ -105,7 +106,7 @@ const loadDelegations = async () => {
     } catch {
       setHealth(null);
     }
-  };
+ };
 
   /* =========================
      AUTO UPDATE (30s)
