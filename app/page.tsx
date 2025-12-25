@@ -1,6 +1,8 @@
+
 "use client";
 import RewardsChart from "./components/RewardsChart";
 import { useEffect, useState } from "react";
+import TotalRewards from "./components/TotalRewards";
 
 /* =========================
    TYPES
