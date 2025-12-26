@@ -1,26 +1,17 @@
 import { NextResponse } from "next/server";
-
-export const dynamic = "force-dynamic";
+import fs from "fs";
 
 export async function GET() {
   try {
-    const res = await fetch("http://62.84.177.12/stats.json", {
-      cache: "no-store",
+    const data = fs.readFileSync("/var/www/technodes/stats.json", "utf8");
+    const json = JSON.parse(data);
+
+    return NextResponse.json(json, {
+      headers: { "Cache-Control": "no-store" }
     });
-
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch stats" },
-        { status: 500 }
-      );
-    }
-
-    const data = await res.json();
-
-    return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
-      { error: "Stats backend unreachable" },
+      { error: "stats not available" },
       { status: 500 }
     );
   }
