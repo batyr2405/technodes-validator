@@ -1,21 +1,16 @@
 import { NextResponse } from "next/server";
+import fs from "fs";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const res = await fetch("http://62.84.177.12/delegations.json", {
-      cache: "no-store",
-    });
+    const raw = fs.readFileSync(
+      "/var/www/technodes/delegations.json",
+      "utf8"
+    );
 
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "delegations data unavailable" },
-        { status: 500 }
-      );
-    }
-
-    const data = await res.json();
+    const data = JSON.parse(raw);
     return NextResponse.json(data);
   } catch (e) {
     return NextResponse.json(
