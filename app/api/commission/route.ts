@@ -12,11 +12,12 @@ export async function GET() {
 
     const data = await res.json();
     return NextResponse.json(data);
-  } catch (e) {
-    console.error("commission error:", e);
-    return NextResponse.json(
-      { error: "commission api failed" },
-      { status: 500 }
-    );
-  }
+ } catch (e: any) {
+   console.error("commission api error:", e?.message || e);
+
+   return NextResponse.json(
+     { error: "commission api failed", details: e?.message || "unknown" },
+     { status: 500 }
+   ); 
+ }
 }
