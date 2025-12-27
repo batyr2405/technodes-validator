@@ -38,6 +38,11 @@ type DelegationsResponse = {
   updated: string;
 };
 
+type CommissionResponse = {
+  commission: number;
+  updated: string;
+};
+
 /* =========================
    PAGE
 ========================= */
@@ -51,7 +56,8 @@ export default function Page() {
   const [delegations, setDelegations] =
     useState<DelegationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
- const [stakeFlash, setStakeFlash] = useState(false);
+  const [stakeFlash, setStakeFlash] = useState(false);
+  const [commission, setCommission] = useState<CommissionResponse | null>(null);
   /* =========================
      LOADERS
   ========================= */
@@ -109,7 +115,18 @@ const loadDelegations = async () => {
       setHealth(null);
     }
  };
+ 
+const loadCommission = async () => {
+  try {
+    const res = await fetch("/api/commission", { cache: "no-store" });
+    if (!res.ok) throw new Error();
 
+    const data = await res.json();
+    setCommission(data);
+  } catch {
+    setCommission(null);
+  }
+};
   /* =========================
      AUTO UPDATE (30s)
   ========================= */
@@ -118,12 +135,14 @@ const loadDelegations = async () => {
     loadStats();
     loadDelegations();
     loadHealth();
+    loadCommission();
 
     const t = setInterval(() => {
       loadRewards();
       loadStats();
       loadDelegations();
       loadHealth();
+      loadCommission();
     }, 30_000);
 
     return () => clearInterval(t);
@@ -194,7 +213,7 @@ const loadDelegations = async () => {
             <div>
               <div className="text-sm text-gray-400">Commission</div>
               <div className="text-xl font-semibold">
-                {stats ? (stats.commission * 100).toFixed(2) : "--"} %
+                {commission ? (commission.commission * 100).toFixed(2) : "--"} %
               </div>
             </div>
           </div>
