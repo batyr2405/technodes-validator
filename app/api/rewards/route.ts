@@ -1,37 +1,38 @@
 import { NextResponse } from "next/server";
-import fs from "fs/promises";
-import path from "path";
 
 export const dynamic = "force-dynamic";
 
-const CSV_PATH = "/var/www/technodes/rewards.csv";
-const TOTAL_PATH = "/var/www/technodes/rewards.json";
+const JSON_URL = "http://technodes.duckdns.org/rewards.json";
+const CSV_URL  = "http://technodes.duckdns.org/rewards.csv";
 
 export async function GET() {
   try {
-    const [csvRaw, totalRaw] = await Promise.all([
-      fs.readFile(CSV_PATH, "utf8"),
-      fs.readFile(TOTAL_PATH, "utf8"),
+    const [jsonRes, csvRes] = await Promise.all([
+      fetch(JSON_URL, { cache: "no-store" }),
+      fetch(CSV_URL,  { cache: "no-store" }),
     ]);
 
-    const total = JSON.parse(totalRaw);
+    if (!jsonRes.ok || !csvRes.ok) throw new Error("fetch failed");
 
-    const lines = csvRaw.trim().split("\n").slice(1); // skip header
-    const now = new Date();
+    const total = await jsonRes.json();
+    const csvText = await csvRes.text();
 
-    let rewards24h = 0;
+    // parse CSV (skip header)
+    const lines = csvText.trim().split("\n").slice(1);
 
-    for (const line of lines) {
-      const [dateStr, rewardStr] = line.split(",");
-      const dt = new Date(dateStr);
+    const last24 = lines
+      .map((l) => {
+        const [, reward] = l.split(",");
+        return parseFloat(reward);
+      })
+      .filter((n) => !isNaN(n));
 
-      if (now.getTime() - dt.getTime() <= 24 * 60 * 60 * 1000) {
-        rewards24h += parseFloat(rewardStr);
-      }
-    }
+    const rewards_24h =
+      last24.length > 0 ? last24[last24.length - 1] : 0;
 
     return NextResponse.json({
-      rewards_24h: Number(rewards24h.toFixed(6)),
+      rewards_24h,
+      diff: rewards_24h,
       total_rewards: total.total_rewards,
       updated: total.updated,
     });
