@@ -29,7 +29,11 @@ const lines = csvText
     const [dateStr, rewardStr] = l.split(",");
     return {
       date: new Date(dateStr.trim()),
-      reward: parseFloat(rewardStr),
+      reward: parseFloat(
+        rewardStr.trim().startsWith(".")
+          ? "0" + rewardStr.trim()
+          : rewardStr.trim()
+      ),
     };
   })
   .filter((r) => !isNaN(r.reward));
