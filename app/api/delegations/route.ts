@@ -1,23 +1,19 @@
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
 export const dynamic = "force-dynamic";
 
-const SOURCE = "http://62.84.177.12/delegations.json";
+const SOURCE = "http://technodes.duckdns.org/delegations.json";
 
 export async function GET() {
   try {
-    const res = await fetch(SOURCE, {
-      headers: { "Cache-Control": "no-store" }
-    });
+    const res = await fetch(SOURCE, { cache: "no-store" });
 
-    if (!res.ok) throw new Error("bad response");
+    if (!res.ok) throw new Error("fetch failed");
 
     const data = await res.json();
-    return NextResponse.json(data, {
-      headers: { "Cache-Control": "no-store" },
-    });
+    return NextResponse.json(data);
   } catch (e) {
+    console.error("delegations api error:", e);
     return NextResponse.json(
       { error: "delegations api failed" },
       { status: 500 }
