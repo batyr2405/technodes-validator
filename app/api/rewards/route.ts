@@ -18,17 +18,25 @@ export async function GET() {
     const csvText = await csvRes.text();
 
     // parse CSV (skip header)
-    const lines = csvText.trim().split("\n").slice(1);
+const now = new Date();
+const dayAgo = now.getTime() - 24 * 60 * 60 * 1000;
 
-    const last24 = lines
-      .map((l) => {
-        const [, reward] = l.split(",");
-        return parseFloat(reward);
-      })
-      .filter((n) => !isNaN(n));
+const lines = csvText
+  .trim()
+  .split("\n")
+  .slice(1) // skip header
+  .map((l) => {
+    const [dateStr, rewardStr] = l.split(",");
+    return {
+      date: new Date(dateStr.trim()),
+      reward: parseFloat(rewardStr),
+    };
+  })
+  .filter((r) => !isNaN(r.reward));
 
-    const rewards_24h =
-      last24.length > 0 ? last24[last24.length - 1] : 0;
+const rewards_24h = lines
+  .filter((r) => r.date.getTime() >= dayAgo)
+  .reduce((sum, r) => sum + r.reward, 0);
 
     return NextResponse.json({
       rewards_24h,
