@@ -2,80 +2,76 @@ import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-const CSV_URL = "http://technodes.duckdns.org/rewards.csv";
-
-type Row = {
-  date: Date;
-  reward: number;
-};
+const JSON_URL = "http://technodes.duckdns.org/rewards.json";
+const CSV_URL  = "http://technodes.duckdns.org/rewards.csv";
 
 export async function GET() {
   try {
-    const res = await fetch(CSV_URL, { cache: "no-store" });
+    const [jsonRes, csvRes] = await Promise.all([
+      fetch(JSON_URL, { cache: "no-store" }),
+      fetch(CSV_URL,  { cache: "no-store" }),
+    ]);
 
-    if (!res.ok) {
-      throw new Error(`CSV fetch failed, status ${res.status}`);
+    if (!jsonRes.ok || !csvRes.ok) {
+      throw new Error(
+        `fetch failed: json=${jsonRes.status} csv=${csvRes.status}`
+      );
     }
 
-    const csvText = await res.text();
+    // ⚙️ total_rewards и updated берём из JSON
+    const total: { total_rewards: number; updated: string } =
+      await jsonRes.json();
 
-    // разбор CSV
-    const rows: Row[] = csvText
+    // ⚙️ Парсим CSV
+    const csvText = await csvRes.text();
+
+    const rows = csvText
       .trim()
       .split("\n")
       .slice(1) // пропускаем заголовок
       .map((line) => {
         const [dateStr, rewardStrRaw] = line.split(",");
-        if (!dateStr || rewardStrRaw === undefined) return null;
 
-        const date = new Date(dateStr.trim());
+        const rewardStr = rewardStrRaw.trim();
+        const normalized =
+          rewardStr.startsWith(".") ? `0${rewardStr}` : rewardStr;
 
-        const trimmed = rewardStrRaw.trim();
-        // фикс вида ".101871" → "0.101871"
-        const normalized = trimmed.startsWith(".") ? `0${trimmed}` : trimmed;
-        const reward = parseFloat(normalized);
-
-        if (isNaN(reward) || Number.isNaN(date.getTime())) return null;
-
-        return { date, reward };
+        return {
+          date: new Date(dateStr.trim()),
+          reward: parseFloat(normalized),
+        };
       })
-      .filter((r): r is Row => r !== null);
+      .filter((row) => !Number.isNaN(row.reward));
 
-    // если нет данных
-    if (rows.length === 0) {
-      return NextResponse.json({
-        rewards_24h: 0,
-        diff: 0,
-        total_rewards: 0,
-        updated: new Date().toISOString(),
-      });
-    }
+    // ⚙️ Сумма за последние 24 часа
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
 
-    // общая сумма
-    const total_rewards = rows.reduce((sum, r) => sum + r.reward, 0);
+    const sum24 = rows
+      .filter((row) => row.date.getTime() >= dayAgo)
+      .reduce((acc, row) => acc + row.reward, 0);
 
-    // 24h: считаем от последней даты в CSV (а не "текущее время")
-    const maxDateMs = Math.max(...rows.map((r) => r.date.getTime()));
-    const windowStart = maxDateMs - 24 * 60 * 60 * 1000;
-
-    const rewards_24h = rows
-      .filter((r) => r.date.getTime() >= windowStart)
-      .reduce((sum, r) => sum + r.reward, 0);
-
-    const updated = new Date(maxDateMs).toISOString();
+    // Если за последние 24 часа нет строк (как сейчас),
+    // используем последнюю строку как "Rewards (24h)", чтобы не было 0
+    const rewards_24h =
+      sum24 > 0 && Number.isFinite(sum24)
+        ? sum24
+        : rows.length
+        ? rows[rows.length - 1].reward
+        : 0;
 
     return NextResponse.json({
       rewards_24h,
       diff: rewards_24h,
-      total_rewards,
-      updated,
+      total_rewards: total.total_rewards,
+      updated: total.updated,
     });
   } catch (e: any) {
     console.error("rewards api error:", e);
     return NextResponse.json(
       {
         error: "rewards api failed",
-        reason: e?.message || "unknown",
+        reason: e?.message ?? "unknown",
       },
       { status: 500 }
     );
