@@ -44,6 +44,12 @@ export default function RewardsChart() {
            <XAxis
              dataKey="date"
              tick={{ fill: "#9ca3af", fontSize: 12 }}
+             tickFormatter={(value: string) => {
+               const d = new Date(value);
+               const day = String(d.getDate()).padStart(2, "0");
+               const month = String(d.getMonth() + 1).padStart(2, "0");
+               return `${day}.${month}`;
+             }}
              label={{
                value: "Rewards history (Date)",
                position: "insideBottom",
