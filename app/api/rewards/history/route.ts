@@ -7,7 +7,7 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const res = await fetch("http://technodes.duckdns.org/rewards.csv", {
+    const res = await fetch("http://62.84.177.12/rewards.csv", {
       cache: "no-store",
     });
 
@@ -16,35 +16,36 @@ export async function GET() {
     const text = await res.text();
     const lines = text.trim().split("\n").slice(1);
 
-    // абсолютные значения
-    const raw = lines.map((line) => {
-      const [date, value] = line.split(",");
+    // парсим как cumulative total
+    const totals = lines.map((line) => {
+      const [date, raw] = line.split(",");
 
-    const total = parseFloat(
-      value.trim().startsWith(".") ? "0" + value.trim() : value.trim()
-    );
+      const num = parseFloat(
+        raw.trim().startsWith(".") ? "0" + raw.trim() : raw.trim()
+      );
+
+      // convert atto → ASHM
       return {
         date,
-        total
+        total: num / 1e18,
       };
-    })
-    .filter((r) => r.total > 1_000_000);
+    });
 
-    // превращаем в приросты
-    const result = raw
-      .map((item, i) => {
-        if (i === 0) return null;
+    // превращаем в приросты по дням
+    const data = [];
 
-        const prev = raw[i - 1];
+    for (let i = 1; i < totals.length; i++) {
+      const diff = totals[i].total - totals[i - 1].total;
 
-        return {
-          date: item.date,
-          rewards: item.total - prev.total,
-        };
-      })
-      .filter(Boolean);
+      if (diff > 0) {
+        data.push({
+          date: totals[i].date,
+          rewards: diff,
+        });
+      }
+    }
 
-    return NextResponse.json(result);
+    return NextResponse.json(data);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
