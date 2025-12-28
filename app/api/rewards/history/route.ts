@@ -20,13 +20,15 @@ export async function GET() {
     const raw = lines.map((line) => {
       const [date, value] = line.split(",");
 
+    const total = parseFloat(
+      value.trim().startsWith(".") ? "0" + value.trim() : value.trim()
+    );
       return {
         date,
-        total: parseFloat(
-          value.trim().startsWith(".") ? "0" + value.trim() : value.trim()
-        ),
+        total
       };
-    });
+    })
+    .filter((r) => r.total > 1_000_000);
 
     // превращаем в приросты
     const result = raw
