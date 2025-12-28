@@ -44,28 +44,46 @@ export async function GET() {
       .filter((row) => !Number.isNaN(row.reward));
 
     // ⚙️ Сумма за последние 24 часа
-    const now = Date.now();
-    const dayAgo = now - 24 * 60 * 60 * 1000;
+const now = new Date();
+const dayAgo = now.getTime() - 24 * 60 * 60 * 1000;
 
-    const sum24 = rows
-      .filter((row) => row.date.getTime() >= dayAgo)
-      .reduce((acc, row) => acc + row.reward, 0);
+const lines = csvText
+  .trim()
+  .split("\n")
+  .slice(1)
+  .map((l) => {
+    const [dateStr, rewardStr] = l.split(",");
 
-    // Если за последние 24 часа нет строк (как сейчас),
-    // используем последнюю строку как "Rewards (24h)", чтобы не было 0
-    const rewards_24h =
-      sum24 > 0 && Number.isFinite(sum24)
-        ? sum24
-        : rows.length
-        ? rows[rows.length - 1].reward
-        : 0;
+    const raw = rewardStr.trim().startsWith(".")
+      ? "0" + rewardStr.trim()
+      : rewardStr.trim();
 
-    return NextResponse.json({
-      rewards_24h,
-      diff: rewards_24h,
-      total_rewards: total.total_rewards,
-      updated: total.updated,
-    });
+    return {
+      date: new Date(dateStr.trim()),
+      total: parseFloat(raw) / 1e18,   // 👈 переводим в ASHM
+    };
+  })
+  .filter((r) => !isNaN(r.total));
+  
+
+// прирост за последние 24 часа
+let rewards_24h = 0;
+
+for (let i = 1; i < lines.length; i++) {
+  if (lines[i].date.getTime() >= dayAgo) {
+    const diff = lines[i].total - lines[i - 1].total;
+    if (diff > 0) rewards_24h += diff;
+  }
+}
+
+return NextResponse.json({
+  rewards_24h,
+  diff: rewards_24h,
+  total_rewards: total.total_rewards,
+  updated: total.updated,
+});
+
+
   } catch (e: any) {
     console.error("rewards api error:", e);
     return NextResponse.json(
