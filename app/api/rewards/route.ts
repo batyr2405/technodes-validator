@@ -49,10 +49,12 @@ const rewards_24h = lines
       total_rewards: total.total_rewards,
       updated: total.updated,
     });
-  } catch (e) {
-    console.error("rewards api error:", e);
+
+  } catch (e: any) {
+    console.error("rewards api error:", e?.message || e);
+
     return NextResponse.json(
-      { error: "rewards api failed" },
+      { error: "rewards api failed", reason: e?.message || "unknown" },
       { status: 500 }
     );
   }
