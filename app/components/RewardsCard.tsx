@@ -41,22 +41,40 @@ export default function RewardsChart() {
     <div className="h-40 mt-4">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data}>
-          <XAxis
-            dataKey="date"
-            tick={{ fill: "#9ca3af", fontSize: 12 }}
-          />
-          <YAxis
-            tick={{ fill: "#9ca3af", fontSize: 12 }}
-            width={40}
-          />
+           <XAxis
+             dataKey="date"
+             tick={{ fill: "#9ca3af", fontSize: 12 }}
+             label={{
+               value: "Rewards history (Date)",
+               position: "insideBottom",
+               offset: -5,
+               fill: "#9ca3af",
+               fontSize: 12,
+             }}
+           />
+
+           <YAxis
+             tick={{ fill: "#9ca3af", fontSize: 12 }}
+             width={60}
+             label={{
+               value: "Total SHM",
+               angle: -90,
+               position: "insideLeft",
+               fill: "#9ca3af",
+               fontSize: 12,
+             }}
+           />
+
           <Tooltip
             contentStyle={{
               backgroundColor: "#020617",
               border: "1px solid #1f2937",
               borderRadius: 8,
             }}
-            labelStyle={{ color: "#9ca3af" }}
-          />
+            formatter={(v: any) => [`${Number(v).toFixed(4)} SHM`, "Rewards"]}
+            labelFormatter={(d: any) => `Date: ${d}`}
+          />        
+
           <Line
             type="monotone"
             dataKey="rewards"
