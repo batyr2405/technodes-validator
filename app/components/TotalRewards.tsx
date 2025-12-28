@@ -2,44 +2,49 @@
 
 import { useEffect, useState } from "react";
 
-type Row = {
-  date: string;
-  rewards: number;
+type RewardsApi = {
+  total_rewards: number;
+  rewards_24h: number;
+  updated: string;
+  error?: string;
+  reason?: string;
 };
 
 export default function TotalRewards() {
-  const [total, setTotal] = useState<number | null>(null);
+  const [data, setData] = useState<RewardsApi | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await fetch("/api/rewards/history", { cache: "no-store" });
-        const data: Row[] = await res.json();
+  const load = async () => {
+    try {
+      const res = await fetch("/api/rewards", { cache: "no-store" });
+      const json = await res.json();
 
-        const sum = data.reduce((a, r) => a + r.rewards, 0);
-        setTotal(sum);
-      } catch (e: any) {
-        setError("Failed to load total rewards");
+      if (!res.ok || json.error) {
+        throw new Error(json.reason || "rewards api failed");
       }
-    }
 
+      setData(json);
+      setError(null);
+    } catch (e) {
+      console.error("TotalRewards UI error:", e);
+      setError("failed");
+    }
+  };
+
+  useEffect(() => {
     load();
+    const id = setInterval(load, 30_000);
+    return () => clearInterval(id);
   }, []);
 
-  return (
-    <div>
-      {error && <div className="text-red-400 text-sm mt-2">{error}</div>}
+  if (error && !data) {
+    return <>--</>;
+  }
 
-      {total === null && !error && (
-        <div className="skeleton h-8 w-32 rounded mt-2" />
-      )}
+  if (!data) {
+    // короткий лоадер, внутри уже есть обёртка с text-3xl
+    return <>…</>;
+  }
 
-      {total !== null && (
-        <div className="text-3xl font-bold text-blue-400 mt-2">
-          {total.toFixed(4)} ASHM
-        </div>
-      )}
-    </div>
-  );
+  return <>{data.total_rewards.toFixed(4)} ASHM</>;
 }
