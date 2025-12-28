@@ -34,17 +34,21 @@ export async function GET() {
     // превращаем в приросты по дням
     const data = [];
 
-    for (let i = 1; i < totals.length; i++) {
-      const diff = totals[i].total - totals[i - 1].total;
+for (let i = 1; i < totals.length; i++) {
+  const diff = totals[i].total - totals[i - 1].total;
 
-      if (diff > 0) {
-        data.push({
-          date: totals[i].date,
-          rewards: diff,
-        });
-      }
-    }
+  if (diff > 0) {
+    const d = new Date(totals[i].date);
+    const formatted =
+      `${String(d.getDate()).padStart(2, "0")}.` +
+      `${String(d.getMonth() + 1).padStart(2, "0")}`;
 
+    data.push({
+      date: formatted,
+      rewards: diff,
+    });
+  }
+}
     return NextResponse.json(data);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
