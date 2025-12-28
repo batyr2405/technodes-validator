@@ -24,16 +24,17 @@ const dayAgo = now.getTime() - 24 * 60 * 60 * 1000;
 const lines = csvText
   .trim()
   .split("\n")
-  .slice(1) // skip header
+  .slice(1)
   .map((l) => {
-    const [dateStr, rewardStr] = l.split(",");
+    const [dateStr, rewardStrRaw] = l.split(",");
+
+    const rewardStr = rewardStrRaw.trim().startsWith(".")
+      ? "0" + rewardStrRaw.trim()
+      : rewardStrRaw.trim();
+
     return {
       date: new Date(dateStr.trim()),
-      reward: parseFloat(
-        rewardStr.trim().startsWith(".")
-          ? "0" + rewardStr.trim()
-          : rewardStr.trim()
-      ),
+      reward: parseFloat(rewardStr),
     };
   })
   .filter((r) => !isNaN(r.reward));
