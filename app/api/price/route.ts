@@ -14,7 +14,7 @@ export async function GET() {
     const data = await res.json();
 
     return NextResponse.json({
-      price: data.shardeum.usd,
+      price_USDT: data.shardeum.usd,
       updated: new Date().toISOString(),
     });
   } catch (e) {

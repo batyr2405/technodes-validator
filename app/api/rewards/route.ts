@@ -51,35 +51,23 @@ export async function GET() {
     const totalJson = await jsonRes.json();
     const csvText = await csvRes.text();
 
-    // ===== считаем rewards_24h по CSV =====
-    const now = Date.now();
-    const dayAgo = now - 24 * 60 * 60 * 1000;
+// ===== считаем rewards_24h как разницу двух последних записей =====
+const lines = csvText.trim().split("\n").slice(1);
 
-    const lines = csvText.trim().split("\n").slice(1); // пропускаем header
+let rewards_24h = 0;
 
-    let rewards_24h = 0;
+if (lines.length >= 2) {
+  const last = lines[lines.length - 1].split(",")[1].trim();
+  const prev = lines[lines.length - 2].split(",")[1].trim();
 
-    for (const line of lines) {
-      const [dateStr, rawAmount] = line.split(",");
-      if (!dateStr || !rawAmount) continue;
+  const n1 = parseFloat(last.startsWith(".") ? "0" + last : last);
+  const n2 = parseFloat(prev.startsWith(".") ? "0" + prev : prev);
 
-      const ts = Date.parse(dateStr.trim());
-      if (Number.isNaN(ts) || ts < dayAgo) continue;
+  const val1 = n1 > 1e10 ? n1 / 1e18 : n1;
+  const val2 = n2 > 1e10 ? n2 / 1e18 : n2;
 
-      const trimmed = rawAmount.trim();
-      const normalized = trimmed.startsWith(".")
-        ? "0" + trimmed
-        : trimmed;
-
-      const parsed = parseFloat(normalized);
-      if (Number.isNaN(parsed)) continue;
-
-      // если это огромные числа (atto), конвертим в ASHM
-      const ashm = parsed > 1e10 ? parsed / 1e18 : parsed;
-
-      rewards_24h += ashm;
-    }
-
+  rewards_24h = val1 - val2;
+}
     const total = Number(totalJson.total_rewards ?? 0);
     const updated = totalJson.updated || new Date().toISOString();   
     const price_usdt = await fetchShmPrice();
