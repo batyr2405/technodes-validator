@@ -18,6 +18,8 @@ type Stats = {
 type RewardsResponse = {
   rewards_24h: number;
   updated: string;
+  price_usdt: number;
+
 };
 
 type HealthResponse = {
@@ -68,6 +70,7 @@ export default function Page() {
 
       setRewards({
         rewards_24h: Number(data.rewards_24h) || 0,
+        price_usdt: Number(data.price_usdt) || 0,      
         updated: data.updated,
       });
       setError(null);
@@ -283,6 +286,11 @@ const loadDelegations = async () => {
                 <div className="text-3xl font-bold text-green-400">
                   +{rewards.rewards_24h.toFixed(4)} ASHM
                 </div>
+               <div className="text-lg text-gray-300">
+                 (~ $
+                 {(rewards.rewards_24h * rewards.price_usdt).toFixed(2)}
+                 )
+               </div>
               </div>
               <div className="text-xs text-gray-500 mt-3">
                 Updated: {new Date(rewards.updated).toLocaleString()}
