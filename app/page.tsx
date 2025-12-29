@@ -79,11 +79,13 @@ export default function Page() {
   const loadStats = async () => {
     try {
       const res = await fetch("/api/stats", { cache: "no-store" });
-      const stats = await res.json();
       if (!res.ok) throw new Error();
+
       const data = await res.json();
       setStats(data);
-    } catch {}
+    } catch {
+      setStats(null);
+    }
   };
 
 const loadDelegations = async () => {
