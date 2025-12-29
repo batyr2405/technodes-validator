@@ -1,95 +1,79 @@
 import { NextResponse } from "next/server";
 
+export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
+export const revalidate = 0;
 
 const JSON_URL = "http://technodes.duckdns.org/rewards.json";
-const CSV_URL  = "http://technodes.duckdns.org/rewards.csv";
+const CSV_URL = "http://technodes.duckdns.org/rewards.csv";
 
 export async function GET() {
   try {
     const [jsonRes, csvRes] = await Promise.all([
       fetch(JSON_URL, { cache: "no-store" }),
-      fetch(CSV_URL,  { cache: "no-store" }),
+      fetch(CSV_URL, { cache: "no-store" }),
     ]);
 
     if (!jsonRes.ok || !csvRes.ok) {
-      throw new Error(
-        `fetch failed: json=${jsonRes.status} csv=${csvRes.status}`
-      );
+      console.error("DEBUG rewards JSON:", jsonRes.status, jsonRes.url);
+      console.error("DEBUG rewards CSV:", csvRes.status, csvRes.url);
+      throw new Error("fetch failed");
     }
 
-    // ⚙️ total_rewards и updated берём из JSON
-    const total: { total_rewards: number; updated: string } =
-      await jsonRes.json();
-
-    // ⚙️ Парсим CSV
+    const totalJson = await jsonRes.json();
     const csvText = await csvRes.text();
 
-    const rows = csvText
-      .trim()
-      .split("\n")
-      .slice(1) // пропускаем заголовок
-      .map((line) => {
-        const [dateStr, rewardStrRaw] = line.split(",");
+    // ===== считаем rewards_24h по CSV =====
+    const now = Date.now();
+    const dayAgo = now - 24 * 60 * 60 * 1000;
 
-        const rewardStr = rewardStrRaw.trim();
-        const normalized =
-          rewardStr.startsWith(".") ? `0${rewardStr}` : rewardStr;
+    const lines = csvText.trim().split("\n").slice(1); // пропускаем header
 
-        return {
-          date: new Date(dateStr.trim()),
-          reward: parseFloat(normalized),
-        };
-      })
-      .filter((row) => !Number.isNaN(row.reward));
+    let rewards_24h = 0;
 
-    // ⚙️ Сумма за последние 24 часа
-const now = new Date();
-const dayAgo = now.getTime() - 24 * 60 * 60 * 1000;
+    for (const line of lines) {
+      const [dateStr, rawAmount] = line.split(",");
+      if (!dateStr || !rawAmount) continue;
 
-const lines = csvText
-  .trim()
-  .split("\n")
-  .slice(1)
-  .map((l) => {
-    const [dateStr, rewardStr] = l.split(",");
+      const ts = Date.parse(dateStr.trim());
+      if (Number.isNaN(ts) || ts < dayAgo) continue;
 
-    const raw = rewardStr.trim().startsWith(".")
-      ? "0" + rewardStr.trim()
-      : rewardStr.trim();
+      const trimmed = rawAmount.trim();
+      const normalized = trimmed.startsWith(".")
+        ? "0" + trimmed
+        : trimmed;
 
-    return {
-      date: new Date(dateStr.trim()),
-      total: parseFloat(raw) / 1e18,   // 👈 переводим в ASHM
-    };
-  })
-  .filter((r) => !isNaN(r.total));
-  
+      const parsed = parseFloat(normalized);
+      if (Number.isNaN(parsed)) continue;
 
-// прирост за последние 24 часа
-let rewards_24h = 0;
+      // если это огромные числа (atto), конвертим в ASHM
+      const ashm = parsed > 1e10 ? parsed / 1e18 : parsed;
 
-for (let i = 1; i < lines.length; i++) {
-  if (lines[i].date.getTime() >= dayAgo) {
-    const diff = lines[i].total - lines[i - 1].total;
-    if (diff > 0) rewards_24h += diff;
-  }
-}
+      rewards_24h += ashm;
+    }
 
-return NextResponse.json({
-  rewards_24h,
-  diff: rewards_24h,
-  total_rewards: total.total_rewards,
-  updated: total.updated,
-});
+    const total = Number(totalJson.total_rewards ?? 0);
+    const updated = totalJson.updated || new Date().toISOString();
 
+    const price_usdt = 0.05; // временный хардкод, потом можно взять с CoinGecko
+    const rewards_usdt = rewards_24h * price_usdt;
+    const total_usdt = total * price_usdt;
 
+    return NextResponse.json({
+      rewards_24h,
+      total_rewards: total,
+      price_usdt: 0.05,
+      rewards_usdt: rewards_24h * 0.05,
+      total_usdt: total * 0.05,
+      updated: new Date().toISOString(),
+    });
   } catch (e: any) {
     console.error("rewards api error:", e);
     return NextResponse.json(
       {
         error: "rewards api failed",
-        reason: e?.message ?? "unknown",
+        reason: e?.message || "unknown",
       },
       { status: 500 }
     );

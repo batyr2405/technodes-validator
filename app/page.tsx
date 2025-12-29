@@ -1,7 +1,7 @@
-
 "use client";
-import RewardsChart from "./components/RewardsChart";
+
 import { useEffect, useState } from "react";
+import RewardsChart from "./components/RewardsChart";
 import TotalRewards from "./components/TotalRewards";
 
 /* =========================
@@ -18,8 +18,8 @@ type Stats = {
 type RewardsResponse = {
   rewards_24h: number;
   updated: string;
-  price_usdt: number;
-
+  rewards_usdt?: number;
+  price_usdt?: number;
 };
 
 type HealthResponse = {
@@ -40,18 +40,11 @@ type DelegationsResponse = {
   updated: string;
 };
 
-type CommissionResponse = {
-  commission: number;
-  updated: string;
-};
-
 /* =========================
    PAGE
 ========================= */
 export default function Page() {
-  /* =========================
-     STATE
-  ========================= */
+  /* STATE */
   const [stats, setStats] = useState<Stats | null>(null);
   const [rewards, setRewards] = useState<RewardsResponse | null>(null);
   const [health, setHealth] = useState<HealthResponse | null>(null);
@@ -59,20 +52,26 @@ export default function Page() {
     useState<DelegationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stakeFlash, setStakeFlash] = useState(false);
-  /* =========================
-     LOADERS
-  ========================= */
+
+  /* LOADERS */
   const loadRewards = async () => {
     try {
       const res = await fetch("/api/rewards", { cache: "no-store" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("rewards api failed");
+
       const data = await res.json();
 
       setRewards({
         rewards_24h: Number(data.rewards_24h) || 0,
-        price_usdt: Number(data.price_usdt) || 0,      
         updated: data.updated,
+        rewards_usdt:
+          typeof data.rewards_usdt === "number"
+            ? data.rewards_usdt
+            : undefined,
+        price_usdt:
+          typeof data.price_usdt === "number" ? data.price_usdt : undefined,
       });
+
       setError(null);
     } catch {
       setError("Failed to load rewards");
@@ -82,8 +81,7 @@ export default function Page() {
   const loadStats = async () => {
     try {
       const res = await fetch("/api/stats", { cache: "no-store" });
-      if (!res.ok) throw new Error();
-
+      if (!res.ok) throw new Error("stats api failed");
       const data = await res.json();
       setStats(data);
     } catch {
@@ -91,39 +89,36 @@ export default function Page() {
     }
   };
 
-const loadDelegations = async () => {
-  try {
-    const res = await fetch("/api/delegations", { cache: "no-store" });
-    if (!res.ok) throw new Error();
+  const loadDelegations = async () => {
+    try {
+      const res = await fetch("/api/delegations", { cache: "no-store" });
+      if (!res.ok) throw new Error("delegations api failed");
 
-    const data = await res.json();
+      const data: DelegationsResponse = await res.json();
 
-    // 🔔 если есть новый стейк
-    if (data.diff && data.diff > 0) {
-      setStakeFlash(true);
+      if (data.diff && data.diff > 0) {
+        setStakeFlash(true);
+        setTimeout(() => setStakeFlash(false), 3000);
+      }
 
-      // выключаем подсветку через 3 сек
-      setTimeout(() => setStakeFlash(false), 3000);
+      setDelegations(data);
+    } catch {
+      setDelegations(null);
     }
-
-    setDelegations(data);
-  } catch {}
-};
+  };
 
   const loadHealth = async () => {
     try {
       const res = await fetch("/api/health", { cache: "no-store" });
-      if (!res.ok) throw new Error();
+      if (!res.ok) throw new Error("health api failed");
       const data = await res.json();
       setHealth(data);
     } catch {
       setHealth(null);
     }
- };
- 
-  /* =========================
-     AUTO UPDATE (30s)
-  ========================= */
+  };
+
+  /* AUTO UPDATE (30s) */
   useEffect(() => {
     loadRewards();
     loadStats();
@@ -140,9 +135,7 @@ const loadDelegations = async () => {
     return () => clearInterval(t);
   }, []);
 
-  /* =========================
-     RENDER
-  ========================= */
+  /* RENDER */
   return (
     <main className="relative min-h-screen bg-black text-white overflow-hidden">
       {/* BACKGROUND */}
@@ -151,7 +144,6 @@ const loadDelegations = async () => {
 
       {/* CONTENT */}
       <div className="relative z-10 max-w-3xl mx-auto px-6 py-16 space-y-10">
-
         {/* INTRO */}
         <div className="text-center space-y-4">
           <h1 className="text-3xl font-bold">Welcome 👋</h1>
@@ -181,31 +173,28 @@ const loadDelegations = async () => {
           </div>
 
           <div className="grid grid-cols-2 gap-6 mt-6">
+            {/* TOTAL STAKE */}
             <div>
               <div className="text-sm text-gray-400">Total Stake</div>
               <div
                 className={`text-xl font-semibold transition-all duration-500 ${
-                  delegations && delegations.diff > 0
-                   ? "text-green-400 animate-pulse"
-                   : ""
+                  stakeFlash ? "text-green-400 animate-pulse" : ""
                 }`}
-           >
-                {(() => {
-                  const stake =
-                    stats?.stake_total ??
-                    delegations?.total_stake;
+              >
+                {delegations
+                  ? delegations.total_stake.toLocaleString()
+                  : "—"}{" "}
+                ASHM
+              </div>
 
-                  return stake !== undefined
-                    ? `${stake.toLocaleString()} ASHM`
-                    : "—";
-                })()}
-               </div>
               {delegations && delegations.diff > 0 && (
-                 <div className="text-xs text-green-400 mt-1">
-                   +{delegations.diff} ASHM
-                 </div>
-               )}
-             </div> 
+                <div className="text-xs text-green-400 mt-1">
+                  +{delegations.diff} ASHM
+                </div>
+              )}
+            </div>
+
+            {/* COMMISSION */}
             <div>
               <div className="text-sm text-gray-400">Commission</div>
               <div className="text-xl font-semibold">
@@ -215,58 +204,52 @@ const loadDelegations = async () => {
           </div>
         </div>
 
+        {/* NEW DELEGATION BANNER (compact) */}
+        {delegations?.new_delegations?.length > 0 && (
+          <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 animate-pulse">
+            <div className="text-sm text-green-300 font-medium mb-1">
+              New delegation detected 🚀
+            </div>
 
-{delegations?.new_delegations?.length > 0 && (
-  <div className="rounded-xl bg-green-500/10 border border-green-500/20 p-4 animate-pulse">
-    <div className="text-sm text-green-300 font-medium mb-1">
-      New delegation detected 🚀
-    </div>
+            {delegations.new_delegations.map((d, i) => (
+              <div key={i} className="text-xs text-gray-300">
+                <span className="text-green-400">
+                  +{d.delta.toLocaleString()} ASHM
+                </span>{" "}
+                from{" "}
+                <span className="font-mono text-gray-400">
+                  {d.delegator.slice(0, 10)}…
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
-    {delegations.new_delegations.map((d, i) => (
-      <div key={i} className="text-xs text-gray-300">
-        <span className="text-green-400">
-          +{d.delta.toLocaleString()} ASHM
-        </span>{" "}
-        from{" "}
-        <span className="font-mono text-gray-400">
-          {d.delegator.slice(0, 10)}…
-        </span>
-      </div>
-    ))}
-  </div>
-)}
+        {/* NEW DELEGATIONS FULL CARD */}
+        {delegations && delegations.new_delegations.length > 0 && (
+          <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 shadow-lg animate-pulse">
+            <div className="text-sm text-green-400 font-semibold mb-3">
+              🟢 New delegation received
+            </div>
 
+            {delegations.new_delegations.map((d, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between text-sm text-gray-200"
+              >
+                <span className="font-mono truncate max-w-[220px]">
+                  {d.delegator}
+                </span>
 
-{/* =========================
-   NEW DELEGATIONS
-========================= */}
-{delegations && delegations.new_delegations.length > 0 && (
-  <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 shadow-lg animate-pulse">
-    <div className="text-sm text-green-400 font-semibold mb-3">
-      🟢 New delegation received
-    </div>
+                <span className="text-green-400 font-semibold">
+                  +{d.delta} ASHM
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
-    {delegations.new_delegations.map((d, idx) => (
-      <div
-        key={idx}
-        className="flex items-center justify-between text-sm text-gray-200"
-      >
-        <span className="font-mono truncate max-w-[220px]">
-          {d.delegator}
-        </span>
-
-        <span className="text-green-400 font-semibold">
-          +{d.delta} ASHM
-        </span>
-      </div>
-    ))}
-  </div>
-)}
-
-
-
-
-        {/* REWARDS */}
+        {/* REWARDS (24h) */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
           <div className="flex justify-between">
             <div className="text-sm text-gray-400">Rewards (24h)</div>
@@ -281,17 +264,22 @@ const loadDelegations = async () => {
 
           {rewards && (
             <>
-              <div className="flex items-center gap-3 mt-3">
-                <span className="text-2xl">🛢️</span>
-                <div className="text-3xl font-bold text-green-400">
-                  +{rewards.rewards_24h.toFixed(4)} ASHM
+              <div className="flex flex-col gap-1 mt-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🛢️</span>
+                  <div className="text-3xl font-bold text-green-400">
+                    +{rewards.rewards_24h.toFixed(4)} ASHM
+                  </div>
                 </div>
-               <div className="text-lg text-gray-300">
-                 (~ $
-                 {(rewards.rewards_24h * rewards.price_usdt).toFixed(2)}
-                 )
-               </div>
+
+                {rewards.price_usdt != null && (
+                  <div className="text-sm text-gray-400">
+                    (~ $
+                    {(rewards.rewards_24h * rewards.price_usdt).toFixed(2)})
+                  </div>
+                )}
               </div>
+
               <div className="text-xs text-gray-500 mt-3">
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
@@ -302,22 +290,18 @@ const loadDelegations = async () => {
           )}
         </div>
 
-{/* =========================
-   TOTAL REWARDS
-========================= */}
-<div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
-  <div className="text-sm text-gray-400 mb-2">
-    Total Rewards
-  </div>
+        {/* TOTAL REWARDS */}
+        <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
+          <div className="text-sm text-gray-400 mb-2">Total Rewards</div>
 
-  <div className="text-3xl font-bold text-green-400 mb-4">
-    <TotalRewards />
-  </div>
+          <div className="text-3xl font-bold text-green-400 mb-4">
+            <TotalRewards />
+          </div>
 
-  <div className="mt-4">
-    <RewardsChart />
-  </div>
-</div>
+          <div className="mt-4">
+            <RewardsChart />
+          </div>
+        </div>
 
         {/* HEALTH */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
@@ -344,7 +328,6 @@ const loadDelegations = async () => {
             </div>
           )}
         </div>
-
       </div>
     </main>
   );

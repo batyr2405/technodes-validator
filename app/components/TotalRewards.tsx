@@ -4,24 +4,25 @@ import { useEffect, useState } from "react";
 
 type RewardsApi = {
   total_rewards: number;
-  rewards_24h: number;
+  total_usdt?: number;
   updated: string;
+  price_usdt?: number;
   error?: string;
   reason?: string;
 };
 
 export default function TotalRewards() {
   const [data, setData] = useState<RewardsApi | null>(null);
-  const [price, setPrice] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // ---- API: rewards ----
-  const loadRewards = async () => {
+  const load = async () => {
     try {
       const res = await fetch("/api/rewards", { cache: "no-store" });
       const json = await res.json();
 
-      if (!res.ok || json.error) throw new Error(json.reason || "rewards api failed");
+      if (!res.ok || json.error) {
+        throw new Error(json.reason || "rewards api failed");
+      }
 
       setData(json);
       setError(null);
@@ -31,29 +32,9 @@ export default function TotalRewards() {
     }
   };
 
-  // ---- API: SHM → USDT price ----
-  const loadPrice = async () => {
-    try {
-      const res = await fetch(
-        "https://api.coingecko.com/api/v3/simple/price?ids=shardeum&vs_currencies=usd",
-        { cache: "no-store" }
-      );
-      const json = await res.json();
-      setPrice(json?.shardeum?.usd ?? null);
-    } catch {
-      setPrice(null);
-    }
-  };
-
   useEffect(() => {
-    loadRewards();
-    loadPrice();
-
-    const id = setInterval(() => {
-      loadRewards();
-      loadPrice();
-    }, 30_000);
-
+    load();
+    const id = setInterval(load, 30_000);
     return () => clearInterval(id);
   }, []);
 
@@ -61,15 +42,9 @@ export default function TotalRewards() {
   if (!data) return <>…</>;
 
   const usd =
-    price != null ? (data.total_rewards * price).toFixed(2) : null;
+    data.total_usdt != null ? data.total_usdt.toFixed(2) : undefined;
 
-  const formattedDate = new Date(data.updated).toLocaleString("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const formattedDate = new Date(data.updated).toLocaleString();
 
   return (
     <div className="space-y-1">
@@ -83,11 +58,12 @@ export default function TotalRewards() {
       </div>
 
       <div className="text-xs text-gray-500">
-        Обновлено: {formattedDate}
-        {price && (
-          <> · 1 SHM = ${price.toFixed(4)}</>
+        Updated: {formattedDate}
+        {data.price_usdt && (
+          <> · 1 SHM = ${data.price_usdt.toFixed(4)}</>
         )}
       </div>
     </div>
   );
 }
+
