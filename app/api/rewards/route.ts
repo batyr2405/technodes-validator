@@ -5,6 +5,33 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+async function fetchShmPrice(): Promise<number> {
+  try {
+    const res = await fetch(
+      "https://api.coingecko.com/api/v3/simple/price?ids=shardeum&vs_currencies=usd",
+      { cache: "no-store" }
+    );
+
+    if (!res.ok) {
+      console.error("price fetch failed with status", res.status);
+      return 0;
+    }
+
+    const data = await res.json();
+    const price = data?.shardeum?.usd;
+
+    if (typeof price === "number" && Number.isFinite(price)) {
+      return price;
+    }
+
+    return 0;
+  } catch (e) {
+    console.error("price fetch error:", e);
+    return 0;
+  }
+}
+
+
 const JSON_URL = "http://technodes.duckdns.org/rewards.json";
 const CSV_URL = "http://technodes.duckdns.org/rewards.csv";
 
@@ -54,18 +81,15 @@ export async function GET() {
     }
 
     const total = Number(totalJson.total_rewards ?? 0);
-    const updated = totalJson.updated || new Date().toISOString();
-
-    const price_usdt = 0.05; // временный хардкод, потом можно взять с CoinGecko
-    const rewards_usdt = rewards_24h * price_usdt;
-    const total_usdt = total * price_usdt;
+    const updated = totalJson.updated || new Date().toISOString();   
+    const price_usdt = await fetchShmPrice();
 
     return NextResponse.json({
       rewards_24h,
       total_rewards: total,
-      price_usdt: 0.05,
-      rewards_usdt: rewards_24h * 0.05,
-      total_usdt: total * 0.05,
+      price_usdt,
+      rewards_usdt: rewards_24h * price_usdt,
+      total_usdt: total * price_usdt,
       updated: new Date().toISOString(),
     });
   } catch (e: any) {
