@@ -31,24 +31,19 @@ export async function GET() {
       };
     });
 
-    // превращаем в приросты по дням
-    const data = [];
+const data = totals
+  .map((row) => {
+    const d = new Date(row.date);
 
-for (let i = 1; i < totals.length; i++) {
-  const diff = totals[i].total - totals[i - 1].total;
+    return {
+      date: `${String(d.getDate()).padStart(2, "0")}.${String(
+        d.getMonth() + 1
+      ).padStart(2, "0")}`,
+      rewards: row.total,
+    };
+  })
+  .filter((r) => r.rewards > 0);
 
-  if (diff > 0) {
-    const d = new Date(totals[i].date);
-    const formatted =
-      `${String(d.getDate()).padStart(2, "0")}.` +
-      `${String(d.getMonth() + 1).padStart(2, "0")}`;
-
-    data.push({
-      date: formatted,
-      rewards: diff,
-    });
-  }
-}
     return NextResponse.json(data);
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
