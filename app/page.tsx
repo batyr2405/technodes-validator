@@ -181,8 +181,8 @@ export default function Page() {
                   stakeFlash ? "text-green-400 animate-pulse" : ""
                 }`}
               >
-                {delegations
-                  ? delegations.total_stake.toLocaleString()
+                {stats
+                  ? stats.stake_total.toLocaleString()
                   : "—"}{" "}
                 ASHM
               </div>
