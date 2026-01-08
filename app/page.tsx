@@ -225,29 +225,6 @@ export default function Page() {
           </div>
         )}
 
-        {/* NEW DELEGATIONS FULL CARD */}
-        {delegations && delegations.new_delegations.length > 0 && (
-          <div className="rounded-2xl border border-green-500/30 bg-green-500/10 p-5 shadow-lg animate-pulse">
-            <div className="text-sm text-green-400 font-semibold mb-3">
-              🟢 New delegation received
-            </div>
-
-            {delegations.new_delegations.map((d, idx) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between text-sm text-gray-200"
-              >
-                <span className="font-mono truncate max-w-[220px]">
-                  {d.delegator}
-                </span>
-
-                <span className="text-green-400 font-semibold">
-                  +{d.delta} ASHM
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* REWARDS (24h) */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
