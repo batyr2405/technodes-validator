@@ -3,10 +3,17 @@
 import { useEffect, useState } from "react";
 
 type RewardsApi = {
-  total_rewards: number;
+  // новый формат (после фикса generate_rewards.sh)
+  total_rewards_shm?: number;
+  total_rewards_ashm?: string;
+
+  // старый формат (на всякий случай)
+  total_rewards?: number;
+
   total_usdt?: number;
   updated: string;
   price_usdt?: number;
+
   error?: string;
   reason?: string;
 };
@@ -41,15 +48,24 @@ export default function TotalRewards() {
   if (error && !data) return <>--</>;
   if (!data) return <>…</>;
 
+  // берем правильное значение (как в CLI) — SHM
+  const totalShm = Number(
+    data.total_rewards_shm ?? data.total_rewards ?? 0
+  );
+
   const usd =
     data.total_usdt != null ? data.total_usdt.toFixed(2) : undefined;
 
   const formattedDate = new Date(data.updated).toLocaleString();
 
+  // как в Shardeum dashboard: показывать цену мелко и стабильно
+  const price =
+    data.price_usdt != null ? Number(data.price_usdt) : null;
+
   return (
     <div className="space-y-1">
       <div className="text-3xl font-semibold">
-        {data.total_rewards.toFixed(4)} ASHM
+        {totalShm.toFixed(4)} SHM
         {usd && (
           <span className="ml-2 text-gray-400 text-lg">
             (~${usd})
@@ -59,11 +75,10 @@ export default function TotalRewards() {
 
       <div className="text-xs text-gray-500">
         Updated: {formattedDate}
-        {data.price_usdt && (
-          <> · 1 SHM = ${data.price_usdt.toFixed(4)}</>
+        {price != null && (
+          <> · 1 SHM = ${price.toFixed(5)}</>
         )}
       </div>
     </div>
   );
 }
-
