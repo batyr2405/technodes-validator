@@ -5,6 +5,9 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const revalidate = 0;
 
+const JSON_URL = "http://technodes.duckdns.org/rewards.json";
+const CSV_URL = "http://technodes.duckdns.org/rewards.csv";
+
 async function fetchShmPrice(): Promise<number> {
   try {
     const res = await fetch(
@@ -13,93 +16,80 @@ async function fetchShmPrice(): Promise<number> {
     );
     if (!res.ok) return 0;
     const data = await res.json();
-    const p = data?.shardeum?.usd;
-    return typeof p === "number" && Number.isFinite(p) ? p : 0;
+    const price = data?.shardeum?.usd;
+    return typeof price === "number" && Number.isFinite(price) ? price : 0;
   } catch {
     return 0;
   }
 }
 
-function withTimeout(url: string, ms = 8000) {
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), ms);
-  return { signal: ctrl.signal, done: () => clearTimeout(t) };
+function toNumberSafe(v: any): number | null {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
-async function fetchTextWithFallback(path: string): Promise<string> {
-  // порядок: локальный nginx -> duckdns -> прямой IP
-  const bases = [
-    process.env.TECHNODES_BASE_URL?.trim(),
-    "http://127.0.0.1",
-    "http://technodes.duckdns.org",
-    "http://62.84.177.12",
-  ].filter(Boolean) as string[];
-
-  let lastErr: any = null;
-
-  for (const base of bases) {
-    const url = `${base}${path}`;
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      const { signal, done } = withTimeout(url, 8000);
-      try {
-        const res = await fetch(url, { cache: "no-store", signal });
-        done();
-        if (!res.ok) {
-          lastErr = new Error(`bad status ${res.status} for ${url}`);
-          continue;
-        }
-        return await res.text();
-      } catch (e) {
-        done();
-        lastErr = e;
-      }
-    }
-  }
-
-  throw lastErr || new Error("fetch failed");
-}
-
-function parseMaybeAtto(s: string): number {
-  const trimmed = s.trim();
-  if (!trimmed) return 0;
-  const normalized = trimmed.startsWith(".") ? "0" + trimmed : trimmed;
-  const n = parseFloat(normalized);
+// total_rewards_ashm приходит как строка вида "2267....086ashm" или просто число-строка
+function attoToShm(attoStr: string): number {
+  const cleaned = attoStr.trim().replace(/ashm$/i, "");
+  const n = Number(cleaned);
   if (!Number.isFinite(n)) return 0;
-  return n > 1e10 ? n / 1e18 : n; // atto -> ASHM
+  return n / 1e18;
 }
 
 export async function GET() {
   try {
-    const [jsonText, csvText] = await Promise.all([
-      fetchTextWithFallback("/rewards.json"),
-      fetchTextWithFallback("/rewards.csv"),
+    const [jsonRes, csvRes, price_usdt] = await Promise.all([
+      fetch(JSON_URL, { cache: "no-store" }),
+      fetch(CSV_URL, { cache: "no-store" }),
+      fetchShmPrice(),
     ]);
 
-    const totalJson = JSON.parse(jsonText);
-    const total = Number(totalJson.total_rewards ?? 0);
+    if (!jsonRes.ok || !csvRes.ok) throw new Error("fetch failed");
 
-    // rewards_24h = разница двух последних строк cumulative-CSV
+    const totalJson = await jsonRes.json();
+    const csvText = await csvRes.text();
+
+    // ===== rewards_24h как разница двух последних записей (cumulative snapshots) =====
     const lines = csvText.trim().split("\n").slice(1);
     let rewards_24h = 0;
 
     if (lines.length >= 2) {
-      const last = lines[lines.length - 1].split(",")[1] ?? "";
-      const prev = lines[lines.length - 2].split(",")[1] ?? "";
-      const v1 = parseMaybeAtto(last);
-      const v2 = parseMaybeAtto(prev);
+      const last = lines[lines.length - 1].split(",")[1]?.trim();
+      const prev = lines[lines.length - 2].split(",")[1]?.trim();
+
+      const n1 = last ? parseFloat(last.startsWith(".") ? "0" + last : last) : 0;
+      const n2 = prev ? parseFloat(prev.startsWith(".") ? "0" + prev : prev) : 0;
+
+      const v1 = n1 > 1e10 ? n1 / 1e18 : n1;
+      const v2 = n2 > 1e10 ? n2 / 1e18 : n2;
+
       rewards_24h = v1 - v2;
-      if (!Number.isFinite(rewards_24h) || rewards_24h < 0) rewards_24h = 0;
+      if (!Number.isFinite(rewards_24h)) rewards_24h = 0;
     }
 
-    const price_usdt = await fetchShmPrice();
+    // ===== TOTAL REWARDS (важно!) =====
+    // новый формат rewards.json:
+    // { total_rewards_shm: 22722.61, total_rewards_ashm: "2272...ashm", ... }
+    let total_shm =
+      toNumberSafe(totalJson.total_rewards_shm) ??
+      (typeof totalJson.total_rewards_ashm === "string"
+        ? attoToShm(totalJson.total_rewards_ashm)
+        : null) ??
+      toNumberSafe(totalJson.total_rewards) ?? // старый формат
+      0;
+
+    const updated =
+      totalJson.updated || new Date().toISOString();
 
     return NextResponse.json({
       rewards_24h,
-      total_rewards: total,
+      total_rewards_shm: total_shm,
+      // на всякий случай тоже отдаем (UI может использовать)
+      total_rewards_ashm: totalJson.total_rewards_ashm,
       price_usdt,
       rewards_usdt: rewards_24h * price_usdt,
-      total_usdt: total * price_usdt,
-      updated: new Date().toISOString(),
+      total_usdt: total_shm * price_usdt,
+      updated,
     });
   } catch (e: any) {
     return NextResponse.json(
