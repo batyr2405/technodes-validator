@@ -24,7 +24,7 @@ export async function GET() {
         raw.trim().startsWith(".") ? "0" + raw.trim() : raw.trim()
       );
 
-      // convert atto → ASHM
+      // convert atto -> SHM
       return {
         date,
         total: num / 1e18,

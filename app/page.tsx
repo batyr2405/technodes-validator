@@ -184,12 +184,12 @@ export default function Page() {
                 {stats
                   ? stats.stake_total.toLocaleString()
                   : "—"}{" "}
-                ASHM
+                SHM
               </div>
 
               {delegations && delegations.diff > 0 && (
                 <div className="text-xs text-green-400 mt-1">
-                  +{delegations.diff} ASHM
+                  +{delegations.diff} SHM
                 </div>
               )}
             </div>
@@ -214,7 +214,7 @@ export default function Page() {
             {delegations.new_delegations.map((d, i) => (
               <div key={i} className="text-xs text-gray-300">
                 <span className="text-green-400">
-                  +{d.delta.toLocaleString()} ASHM
+                  +{d.delta.toLocaleString()} SHM
                 </span>{" "}
                 from{" "}
                 <span className="font-mono text-gray-400">
@@ -245,7 +245,7 @@ export default function Page() {
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🛢️</span>
                   <div className="text-3xl font-bold text-green-400">
-                    +{rewards.rewards_24h.toFixed(4)} ASHM
+                    +{rewards.rewards_24h.toFixed(4)} SHM
                   </div>
                 </div>
 
