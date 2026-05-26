@@ -201,10 +201,19 @@ export default function Page() {
                     : "-- SHM"}
                 </div>
               </div>
+
+              <div className="text-right">
+                <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                  Commission
+                </div>
+                <div className="text-sm font-semibold text-white">
+                  {stats ? Number((stats.commission * 100).toFixed(2)) : "--"} %
+                </div>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-6 mt-6">
+          <div className="mt-6">
             {/* TOTAL STAKE */}
             <div>
               <div className="text-sm text-gray-400">Total Stake</div>
@@ -224,14 +233,6 @@ export default function Page() {
                   +{delegations.diff} SHM
                 </div>
               )}
-            </div>
-
-            {/* COMMISSION */}
-            <div>
-              <div className="text-sm text-gray-400">Commission</div>
-              <div className="text-xl font-semibold">
-                {stats ? (stats.commission * 100).toFixed(2) : "--"} %
-              </div>
             </div>
           </div>
         </div>
