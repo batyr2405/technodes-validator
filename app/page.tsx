@@ -37,11 +37,12 @@ type DelegationsResponse = {
   total_stake: number;
   diff: number;
   new_delegations: Delegation[];
+  last_delegation?: Partial<Delegation> | null;
   updated: string;
 };
 
-function utcPlus3DayProgress() {
-  const now = new Date();
+function utcPlus3DayProgress(dateLike?: string) {
+  const now = dateLike ? new Date(dateLike) : new Date();
   const minutes = (((now.getUTCHours() + 3) % 24) * 60) + now.getUTCMinutes();
   return Math.min(minutes / 1439, 1);
 }
@@ -58,11 +59,18 @@ export default function Page() {
     useState<DelegationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stakeFlash, setStakeFlash] = useState(false);
-  const dayProgress = utcPlus3DayProgress();
+  const dayProgress = utcPlus3DayProgress(rewards?.updated);
   const stemHeight = 18 + Math.round(dayProgress * 76);
   const bloomScale = 0.35 + dayProgress * 0.85;
   const crownOpacity = dayProgress > 0.55 ? 1 : 0;
   const flowerOpacity = dayProgress <= 0.75 ? 1 : 0;
+  const lastDelegation = delegations?.last_delegation;
+  const lastDelegationAmount =
+    typeof lastDelegation?.delta === "number"
+      ? lastDelegation.delta
+      : typeof lastDelegation?.amount === "number"
+        ? lastDelegation.amount
+        : null;
 
   /* LOADERS */
   const loadRewards = async () => {
@@ -174,12 +182,25 @@ export default function Page() {
               <p className="text-gray-400 mt-1">Shardeum</p>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="relative flex h-3 w-3">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 status-glow" />
-                <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
-              </span>
-              <span className="text-sm text-green-400 font-medium">ACTIVE</span>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-3 w-3">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 status-glow" />
+                  <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+                </span>
+                <span className="text-sm text-green-400 font-medium">ACTIVE</span>
+              </div>
+
+              <div className="rounded-md border border-green-400/20 bg-green-400/10 px-2 py-1 text-right">
+                <div className="text-[10px] uppercase tracking-wide text-gray-400">
+                  Last delegation
+                </div>
+                <div className="text-xs font-semibold text-green-300">
+                  {lastDelegationAmount != null
+                    ? `${lastDelegationAmount.toLocaleString()} SHM`
+                    : "-- SHM"}
+                </div>
+              </div>
             </div>
           </div>
 
@@ -239,9 +260,14 @@ export default function Page() {
 
         {/* REWARDS TODAY */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center">
             <div className="text-sm text-gray-400">Rewards today</div>
-            <div className="text-xs text-green-400">live</div>
+            <div className="flex items-center gap-2">
+              <div className="rounded-md border border-white/10 bg-white/5 px-2 py-1 text-xs text-gray-300">
+                UTC+3
+              </div>
+              <div className="text-xs text-green-400">live</div>
+            </div>
           </div>
 
           {error && <div className="text-red-400 text-sm mt-3">{error}</div>}
@@ -302,7 +328,7 @@ export default function Page() {
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
               <div className="text-xs text-gray-400">
-                UTC+3 day, on-chain snapshot every minute
+                UTC+3 day, server-synced snapshot every minute
               </div>
             </>
           )}
