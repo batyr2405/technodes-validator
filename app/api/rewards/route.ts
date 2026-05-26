@@ -36,6 +36,32 @@ function attoToShm(attoStr: string): number {
   return n / 1e18;
 }
 
+function moscowDateKey(dateLike: string): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Moscow",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(dateLike));
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${values.year}-${values.month}-${values.day}`;
+}
+
+function parseSnapshot(line: string): { date: string; totalShm: number } | null {
+  const [date, raw] = line.split(",");
+  if (!date || !raw) return null;
+
+  const value = raw.trim();
+  const n = parseFloat(value.startsWith(".") ? `0${value}` : value);
+  if (!Number.isFinite(n)) return null;
+
+  return {
+    date,
+    totalShm: n > 1e10 ? n / 1e18 : n,
+  };
+}
+
 export async function GET() {
   try {
     const [jsonRes, csvRes, price_usdt] = await Promise.all([
@@ -49,21 +75,23 @@ export async function GET() {
     const totalJson = await jsonRes.json();
     const csvText = await csvRes.text();
 
-    // ===== rewards_24h как разница двух последних записей (cumulative snapshots) =====
-    const lines = csvText.trim().split("\n").slice(1);
+    // MSK day rewards: current cumulative total minus first snapshot of today.
+    const todayMsk = moscowDateKey(new Date().toISOString());
+    const snapshots = csvText
+      .trim()
+      .split("\n")
+      .slice(1)
+      .map(parseSnapshot)
+      .filter(
+        (row): row is { date: string; totalShm: number } =>
+          row != null && moscowDateKey(row.date) === todayMsk
+      );
     let rewards_24h = 0;
 
-    if (lines.length >= 2) {
-      const last = lines[lines.length - 1].split(",")[1]?.trim();
-      const prev = lines[lines.length - 2].split(",")[1]?.trim();
-
-      const n1 = last ? parseFloat(last.startsWith(".") ? "0" + last : last) : 0;
-      const n2 = prev ? parseFloat(prev.startsWith(".") ? "0" + prev : prev) : 0;
-
-      const v1 = n1 > 1e10 ? n1 / 1e18 : n1;
-      const v2 = n2 > 1e10 ? n2 / 1e18 : n2;
-
-      rewards_24h = v1 - v2;
+    if (snapshots.length >= 2) {
+      const first = snapshots[0].totalShm;
+      const last = snapshots[snapshots.length - 1].totalShm;
+      rewards_24h = Math.max(last - first, 0);
       if (!Number.isFinite(rewards_24h)) rewards_24h = 0;
     }
 

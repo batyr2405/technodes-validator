@@ -226,10 +226,10 @@ export default function Page() {
         )}
 
 
-        {/* REWARDS (24h) */}
+        {/* REWARDS TODAY */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
           <div className="flex justify-between">
-            <div className="text-sm text-gray-400">Rewards (24h)</div>
+            <div className="text-sm text-gray-400">Rewards today (MSK)</div>
             <div className="text-xs text-green-400">live</div>
           </div>
 
@@ -261,7 +261,7 @@ export default function Page() {
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
               <div className="text-xs text-gray-400">
-                Auto-updated every 30 seconds
+                On-chain snapshot every minute
               </div>
             </>
           )}
