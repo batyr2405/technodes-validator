@@ -40,6 +40,12 @@ type DelegationsResponse = {
   updated: string;
 };
 
+function utcPlus3DayProgress() {
+  const now = new Date();
+  const minutes = (((now.getUTCHours() + 3) % 24) * 60) + now.getUTCMinutes();
+  return Math.min(minutes / 1439, 1);
+}
+
 /* =========================
    PAGE
 ========================= */
@@ -52,6 +58,11 @@ export default function Page() {
     useState<DelegationsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [stakeFlash, setStakeFlash] = useState(false);
+  const dayProgress = utcPlus3DayProgress();
+  const stemHeight = 18 + Math.round(dayProgress * 76);
+  const bloomScale = 0.35 + dayProgress * 0.85;
+  const crownOpacity = dayProgress > 0.55 ? 1 : 0;
+  const flowerOpacity = dayProgress <= 0.75 ? 1 : 0;
 
   /* LOADERS */
   const loadRewards = async () => {
@@ -229,7 +240,7 @@ export default function Page() {
         {/* REWARDS TODAY */}
         <div className="rounded-2xl bg-white/5 backdrop-blur border border-white/10 p-6 shadow-lg">
           <div className="flex justify-between">
-            <div className="text-sm text-gray-400">Rewards today (MSK)</div>
+            <div className="text-sm text-gray-400">Rewards today</div>
             <div className="text-xs text-green-400">live</div>
           </div>
 
@@ -241,8 +252,38 @@ export default function Page() {
 
           {rewards && (
             <>
-              <div className="flex flex-col gap-1 mt-3">
-                <div className="flex items-center gap-3">
+              <div className="mt-4 flex justify-center">
+                <div className="reward-plant-wrap" aria-hidden="true">
+                  <div className="reward-plant-ground" />
+                  <div
+                    className="reward-plant-stem"
+                    style={{ height: `${stemHeight}px` }}
+                  />
+                  <div
+                    className="reward-plant-flower"
+                    style={{
+                      opacity: flowerOpacity,
+                      transform: `translateX(-50%) scale(${bloomScale})`,
+                    }}
+                  >
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <i />
+                  </div>
+                  <div
+                    className="reward-plant-crown"
+                    style={{
+                      opacity: crownOpacity,
+                      transform: `translateX(-50%) scale(${0.45 + dayProgress * 0.7})`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-1 mt-3 text-center">
+                <div className="flex items-center justify-center gap-3">
                   <span className="text-2xl">🛢️</span>
                   <div className="text-3xl font-bold text-green-400">
                     +{rewards.rewards_24h.toFixed(4)} SHM
@@ -261,7 +302,7 @@ export default function Page() {
                 Updated: {new Date(rewards.updated).toLocaleString()}
               </div>
               <div className="text-xs text-gray-400">
-                On-chain snapshot every minute
+                UTC+3 day, on-chain snapshot every minute
               </div>
             </>
           )}
